@@ -1,0 +1,20 @@
+.asaas-live-plan{display:grid;gap:10px;padding:13px;margin-top:9px;border:1px solid var(--border);border-radius:13px;background:var(--surface-muted);color:var(--text);text-align:left}
+.asaas-live-heading{display:flex;align-items:center;gap:6px;color:var(--accent);font-weight:800;font-size:11px}
+.asaas-live-plan p{margin:0!important;font-size:11px!important;line-height:1.5;color:var(--text-secondary)}
+.asaas-live-methods{display:grid;grid-template-columns:1fr 1fr;gap:6px}.asaas-live-methods button{display:flex;align-items:center;justify-content:center;gap:7px;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:10px;color:var(--text);font-size:11px;font-weight:700}
+.asaas-live-methods button.selected{border-color:var(--accent);background:var(--accent-soft);color:var(--heading)}
+.asaas-live-action{background:var(--ink);color:var(--on-ink);border:1px solid var(--ink);min-height:43px;border-radius:9px;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;text-align:center;gap:7px;padding:10px;text-decoration:none}
+.asaas-live-action:disabled{opacity:.5}
+.asaas-live-refresh{border:0;background:transparent;color:var(--accent);font-size:11px;display:flex;justify-content:center;align-items:center;gap:5px}
+.asaas-live-plan>small{font-size:10px;color:var(--text-muted)}
+.asaas-live-error{font-size:11px;color:var(--danger);line-height:1.5}
+
+.asaas-live-current{display:flex;gap:9px;align-items:center;border:1px solid var(--border);background:var(--surface);border-radius:9px;padding:11px;font-size:11px;color:var(--success);line-height:1.5}
+.asaas-live-current strong{color:var(--heading)}
+.asaas-live-checkout-link{display:inline-flex;justify-content:center;align-items:center;gap:6px;font-size:11px;font-weight:750;color:var(--accent);padding:7px;text-decoration:underline}
+.asaas-live-cancel{display:flex;align-items:center;justify-content:center;border:1px solid var(--border);border-radius:9px;padding:10px;font-size:11px;font-weight:800;color:var(--danger);background:var(--surface);cursor:pointer}
+.asaas-live-cancel:disabled{opacity:.5}
+.asaas-live-attention{display:flex;gap:8px;align-items:flex-start;font-size:11px;color:var(--warning);line-height:1.6;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--warning-soft)}
+.asaas-live-notice{padding:9px;border-radius:7px;background:var(--surface);border:1px solid var(--border);font-size:11px;color:var(--success)}
+.asaas-live-plan>small:last-child{display:flex;gap:6px;align-items:flex-start;font-size:10px;color:var(--text-muted)}
+.asaas-live-refresh{cursor:pointer}

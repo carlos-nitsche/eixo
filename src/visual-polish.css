@@ -1,0 +1,148 @@
+/* EIXO / Studio — shared visual language, including lazily loaded modules.
+   The root specificity keeps these finishing rules independent of chunk order. */
+:root {
+ --bg:#f3f5f4;--surface:#fff;--sidebar:#f9fbfa;--surface-muted:#f0f4f2;--surface-tint:#e7f0eb;
+ --heading:#18342b;--text:#30473d;--text-secondary:#5b6e64;--text-muted:#697c72;
+ --accent:#176e55;--accent-hover:#105640;--accent-soft:#e3f1e9;--on-accent:#fff;
+ --border:#dbe5df;--line:#eaf0ec;--radius:16px;--radius-lg:22px;--radius-sm:10px;
+ --shadow:0 2px 4px #18382b03,0 8px 28px #18382b05;
+ --shadow-raised:0 5px 12px #18382b06,0 16px 36px #18382b0a;
+ --shadow-overlay:0 32px 100px #102c2830;
+ --ease:cubic-bezier(.22,1,.36,1);--motion:220ms;
+}
+:root[data-theme=dark] {
+ --bg:#111b18;--surface:#1a2722;--sidebar:#14201b;--surface-muted:#213129;--surface-tint:#293d32;
+ --heading:#edf5ef;--text:#dbe7de;--text-secondary:#b3c7ba;--text-muted:#9fb5a7;
+ --accent:#83dbb4;--accent-hover:#a4e8c9;--accent-soft:#274235;--on-accent:#102a1e;
+ --border:#34483c;--line:#2a3b31;--shadow:0 3px 18px #00000012;
+ --shadow-raised:0 12px 32px #00000024;--shadow-overlay:0 32px 100px #0008;
+}
+:root body {background:var(--bg);text-rendering:optimizeLegibility}
+/* Use the same fallback stack even where legacy components set a local font. */
+:root :is(button,input,select,textarea,h1,h2,h3,h4,.metric-value,.metric-title,.metric-unit) {font-family:var(--font-ui)}
+:root .metric.featured[data-tone] .metric-pill {color:var(--success);background:var(--success-soft)}
+:root .metric.featured[data-tone] .metric-title svg {color:var(--signal)}
+:root .metric-foot {flex-wrap:wrap;row-gap:8px}
+:root .module-skeleton {min-height:160px;padding:24px;align-content:center;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);box-shadow:var(--shadow)}
+:root .auth-spinner {border-top-color:var(--accent)}
+:root [role=dialog][aria-modal=true] {overscroll-behavior:contain}
+:root :is(.habit-dialog,.study-dialog,.eixo-pdv-dialog,.ts-detail-dialog,.xp-dialog,.eixo-scan-dialog) {border:1px solid var(--border);box-shadow:var(--shadow-overlay)}
+@media (prefers-reduced-motion:no-preference) {
+ :root :is(.eixo-pdv-dialog,.ts-detail-dialog,.xp-dialog,.eixo-scan-dialog) {animation:eixo-dialog .22s var(--ease) both}
+}
+@media (min-width:360px) and (max-width:600px) {
+ :root .content .modular-metrics {grid-template-columns:repeat(2,minmax(0,1fr))}
+ :root .content .modular-metrics .metric {padding:14px;min-height:150px}
+ :root .content .modular-metrics .metric-title {font-size:11px;gap:6px}
+ :root .content .modular-metrics .metric-value {font-size:clamp(20px,5.3vw,28px);margin:16px 0 10px;letter-spacing:-.7px}
+ :root .content .modular-metrics .metric-unit {font-size:11px}
+ :root .content .modular-metrics .metric-title>svg {width:15px;height:15px;padding:5px}
+}
+::selection {background:var(--accent);color:var(--brand-on)}
+:root h1,:root h2,:root h3 {text-wrap:balance}
+:root .sidebar {background:linear-gradient(180deg,var(--surface),var(--sidebar));border-right-color:var(--border)}
+:root .brand {padding-bottom:28px}
+:root .eixo-brand>svg {filter:drop-shadow(0 3px 4px #176e5510)}
+:root .workspace {box-shadow:var(--shadow);border-radius:14px;padding:11px;margin-bottom:20px}
+:root .workspace-avatar {background:var(--accent-soft);color:var(--accent);border-radius:10px}
+:root .nav-link {border:1px solid transparent;border-radius:11px;transition:background .2s,color .2s,border-color .2s,transform .2s var(--ease)}
+:root .nav-link.active {background:var(--accent-soft);border-color:color-mix(in srgb,var(--accent) 17%,transparent);box-shadow:0 2px 5px #176e5505}
+:root .nav-link.active i {width:6px;height:6px;box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 10%,transparent)}
+:root .nav-label {letter-spacing:1.6px;font-size:9px}
+:root .shortcut {background:var(--surface);border-style:solid;border-radius:12px;min-height:44px}
+:root .topbar {background:color-mix(in srgb,var(--surface) 88%,transparent);backdrop-filter:blur(16px);border-color:var(--line)}
+:root .crumb-divider {color:var(--text-muted)}
+:root .saved-indicator>span {box-shadow:0 0 0 4px var(--accent-soft)}
+:root .content {padding-top:32px}
+:root .page-heading h1,:root .erp-head h1,:root .study-hero h1,:root .habit-hero h1,:root .ts-heading h1,:root .ns-hero h1 {font-size:clamp(27px,2.5vw,36px);font-weight:720;letter-spacing:-1.25px;line-height:1.18}
+:root .eyebrow,:root .study-eyebrow,:root .habit-eyebrow,:root .ts-eyebrow {color:var(--accent);font-size:10px;letter-spacing:1.8px;font-weight:750}
+:root .page-heading,:root .erp-head,:root .study-hero,:root .habit-hero,:root .ts-heading,:root .ns-hero {padding-bottom:24px;margin-bottom:24px;border-bottom:1px solid var(--border)}
+:root :is(.panel,.erp-block,.study-panel,.habit-panel,.ns-panel,.ts-editor,.ts-custom,.ts-chart,.ts-plan-card,.study-subject-card,.habit-tile,.goal-card,.lp-plan,.auth-plan) {border-radius:var(--radius);border-color:var(--border);box-shadow:var(--shadow)}
+:root :is(.panel-head,.erp-block-header,.study-panel-head,.habit-panel-head) h3 {letter-spacing:-.3px}
+:root :is(.metric,.erp-metric,.study-metrics>article,.habit-metrics>article,.ts-metrics>div,.ns-stats>div) {border-radius:var(--radius);box-shadow:var(--shadow);border-color:var(--border);background:var(--surface)}
+:root :is(.metric-value,.erp-metric>strong,.ts-metrics strong,.ns-stats strong) {font-variant-numeric:tabular-nums;letter-spacing:-1.2px;font-weight:700}
+:root .metric.featured {background:linear-gradient(125deg,#173e31,#246b50);border-color:#2c7157;position:relative;overflow:hidden}
+:root .metric.featured:after {content:'';position:absolute;width:170px;height:170px;right:-65px;top:-75px;border:26px solid #ffffff06;border-radius:50%;pointer-events:none}
+:root .metric.featured .metric-title,:root .metric.featured .metric-title svg,:root .metric.featured .metric-value {color:#f2fff6}
+:root .metric.featured .metric-foot {color:#c0dccb}
+:root .metric.featured .metric-pill {background:#ffffff1c;color:#e0ffeb}
+:root :is(.btn,.erp-btn,.study-btn,.habit-btn,.ts-button,.ns-button,.auth-primary,.auth-secondary,.lp-button) {border-radius:10px;min-height:44px;font-weight:650;transition:transform .2s var(--ease),background .2s,border-color .2s,box-shadow .2s}
+:root :is(.btn.primary,.erp-btn.solid,.study-btn.primary,.habit-btn.primary,.ts-button.ts-primary,.ns-button.ns-primary,.auth-primary) {background:var(--accent);color:var(--brand-on);border-color:var(--accent);box-shadow:0 3px 8px color-mix(in srgb,var(--accent) 14%,transparent)}
+:root :is(.icon-tile,.empty-icon,.study-subject-symbol,.auth-card-icon) {border-radius:13px}
+:root :is(.icon-tile,.study-subject-symbol) {box-shadow:inset 0 0 0 1px color-mix(in srgb,currentColor 8%,transparent)}
+:root :is(.erp-nav,.study-tabs,.habit-tabs,.ts-tabs,.ns-tabs) {gap:6px;padding:6px;margin-bottom:24px;background:var(--surface-muted);border:1px solid var(--border);border-radius:14px;scrollbar-width:thin}
+:root :is(.erp-nav,.study-tabs,.habit-tabs,.ts-tabs,.ns-tabs) button {border:1px solid transparent;border-radius:9px;background:transparent;min-height:42px;color:var(--text-secondary);transition:background .2s,color .2s,box-shadow .2s}
+:root .study-tabs button.active,:root .habit-tabs button.selected,:root :is(.ts-tabs,.ns-tabs) button.active,:root .erp-nav button.erp-nav-active {background:var(--surface)!important;color:var(--accent)!important;border-color:var(--border)!important;box-shadow:0 2px 6px #18382b08}
+:root .segmented {padding:4px;gap:3px;background:var(--surface-muted);border:1px solid var(--border);border-radius:11px}
+:root .segmented button {border-radius:7px}
+:root .segmented button.selected {background:var(--surface);color:var(--accent);box-shadow:0 2px 5px #18382b0a}
+:root :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]),select,textarea) {transition:border-color .2s,box-shadow .2s,background .2s}
+:root :is(input,select,textarea):focus-visible {outline:2px solid var(--accent);outline-offset:3px;box-shadow:0 0 0 5px color-mix(in srgb,var(--accent) 8%,transparent)}
+:root :is(.table-wrap,.erp-table-scroll) thead {background:var(--surface-muted)}
+:root :is(.table-wrap,.erp-table-scroll) th {font-size:10px;text-transform:uppercase;letter-spacing:.9px;padding-block:15px}
+:root :is(.table-wrap,.erp-table-scroll) td {border-color:var(--line)}
+:root :is(.table-wrap,.erp-table-scroll) tbody tr {transition:background .18s}
+:root :is(.empty,.erp-empty,.study-empty,.habit-empty,.ts-empty,.ns-empty) {color:var(--text-secondary)}
+:root :is(.empty-icon,.erp-empty>span) {background:var(--accent-soft);color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 12%,transparent)}
+:root :is(.training-banner,.ts-today,.erp-pos,.lp-final) {background:linear-gradient(120deg,var(--surface-tint),var(--surface));border-color:var(--border);border-radius:20px}
+:root :is(.overlay,.erp-overlay,.habit-dialog-overlay,.study-dialog-backdrop) {backdrop-filter:blur(7px);background:#0e211d70}
+:root :is(.edit-dialog,.search-dialog,.erp-modal,.habit-dialog,.study-dialog) {border:1px solid var(--border);border-radius:22px;box-shadow:var(--shadow-overlay);animation:eixo-dialog .28s var(--ease) both}
+:root :is(.toast,.erp-toast,.habit-toast) {border:1px solid var(--border);box-shadow:var(--shadow-raised);border-radius:13px}
+:root .auth-sidebar {background:radial-gradient(ellipse at 10% 80%,#32775b80,transparent 65%),#14392c}
+:root .auth-card,:root .auth-white-card {background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow-raised)}
+:root .auth-card-icon {background:var(--accent-soft);border:1px solid var(--border)}
+:root .lp-product-window {box-shadow:var(--shadow-raised);border-radius:20px}
+:root .lp-orbit-label {box-shadow:var(--shadow-raised)}
+:root .lp-plan {transition:transform .25s var(--ease),box-shadow .25s}
+:root .eixo-pdv-top {background:var(--surface);box-shadow:0 3px 16px #18382b06}
+/* Match the cards' edges; the mobile header includes the device safe area. */
+:root .erp-shell .erp-nav{margin-inline:0;width:100%;box-sizing:border-box;align-items:center;scroll-padding-inline:6px}
+:root .erp-shell .erp-nav button{flex:0 0 auto;justify-content:center;align-self:stretch;line-height:1.2}
+@media(max-width:740px){
+ :root .erp-shell .erp-nav{top:var(--app-topbar-height,64px);padding:6px;z-index:8;background:var(--surface);box-shadow:0 5px 0 var(--bg),0 9px 15px #00000008;scrollbar-width:none}
+ :root .erp-shell .erp-nav::-webkit-scrollbar{display:none}
+}
+:root .eixo-pdv-logo {background:var(--accent);color:var(--brand-on);box-shadow:0 4px 12px #176e551a}
+:root .eixo-pdv button {transition:background .2s,border-color .2s,box-shadow .2s}
+.eixo-glyph {display:inline-block;vertical-align:middle;flex-shrink:0;color:var(--habit-color,var(--accent));overflow:visible}
+:root .habit-icon-picker button {display:grid;place-items:center;padding:5px;min-width:44px;min-height:44px}
+:root .habit-icon-picker .eixo-glyph {width:32px;height:32px}
+:root .habit-icon-picker button.selected {box-shadow:0 0 0 2px var(--accent);background:var(--accent-soft)}
+:root :is(.habit-tile-icon,.habit-list-icon) {display:grid;place-items:center;color:var(--habit-color,var(--accent))}
+:root .habit-tile-icon .eixo-glyph {width:40px;height:40px}
+:root .habit-presets>button>span {display:flex;align-items:center}
+/* Only the page's immediate sections enter: no transformed ancestor for fixed dialogs. */
+@media(prefers-reduced-motion:no-preference) {
+ .content>:is(.page-heading,.metrics,.panel,.dashboard-grid,.finance-layout,.calendar-layout,.settings-layout),
+ .content>:is(.study-root,.habit-studio,.ts-root,.ns-root)>:is(header,nav,section,.ts-metrics,.ns-stats),
+ .content>.erp-shell>:is(header,nav,section) {animation:eixo-enter .45s var(--ease) backwards}
+ .content>:nth-child(2) {animation-delay:45ms}
+ .content>:nth-child(3) {animation-delay:85ms}
+ .content>:nth-child(4) {animation-delay:120ms}
+ :root :is(.progress-fill,.habit-progress>i,.study-progress>i) {transition:width .65s var(--ease)}
+ :root .habit-action-check.checked svg {animation:eixo-check .3s var(--ease)}
+ :root .auth-card {animation:eixo-enter .5s var(--ease) both}
+}
+@media(hover:hover) and (pointer:fine) {
+ :root .nav-link:hover {transform:translateX(2px)}
+ :root :is(.btn,.erp-btn,.study-btn,.habit-btn,.ts-button,.ns-button,.auth-primary,.auth-secondary,.lp-button):not(:disabled):hover {transform:translateY(-1px);box-shadow:var(--shadow-raised)}
+ :root :is(.btn.primary,.erp-btn.solid,.study-btn.primary,.habit-btn.primary,.ts-button.ts-primary,.ns-button.ns-primary,.auth-primary):not(:disabled):hover {background:var(--accent-hover);border-color:var(--accent-hover)}
+ :root :is(.study-subject-card,.habit-tile,.lp-plan):hover {box-shadow:var(--shadow-raised);border-color:color-mix(in srgb,var(--accent) 30%,var(--border))}
+ :root :is(.table-wrap,.erp-table-scroll) tbody tr:hover {background:var(--surface-muted)}
+ :root .habit-icon-picker button:hover .eixo-glyph {transform:rotate(-5deg) scale(1.08)}
+ .eixo-glyph {transition:transform .2s var(--ease)}
+}
+:root button:active:not(:disabled) {transform:translateY(1px);box-shadow:none}
+@keyframes eixo-enter {from{opacity:0;translate:0 8px}to{opacity:1;translate:0 0}}
+@keyframes eixo-dialog {from{opacity:0;transform:translateY(12px) scale(.985)}to{opacity:1;transform:none}}
+@keyframes eixo-check {from{scale:.6;opacity:.2}to{scale:1;opacity:1}}
+@media(max-width:600px) {
+ :root .content {padding-top:24px}
+ :root .auth-sidebar {background:var(--bg)}
+ :root :is(.page-heading,.erp-head,.study-hero,.habit-hero,.ts-heading,.ns-hero) {padding-bottom:20px;margin-bottom:20px}
+ :root :is(.erp-nav,.study-tabs,.habit-tabs,.ts-tabs,.ns-tabs) {border-radius:12px;padding:4px;margin-bottom:18px}
+ :root :is(.edit-dialog,.search-dialog,.erp-modal,.habit-dialog,.study-dialog) {border-radius:17px}
+}
+@media(prefers-reduced-motion:reduce) {
+ :root *,:root *:before,:root *:after {animation:none!important;transition:none!important;scroll-behavior:auto!important}
+}

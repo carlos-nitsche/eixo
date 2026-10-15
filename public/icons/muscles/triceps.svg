@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="triceps">
+ 
+  
+  
+  
+  <defs>
+   <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ECFFF8"/><stop offset="1" stop-color="#D2EEE5"/></linearGradient>
+   <linearGradient id="body" x1="0" y1="0" x2=".9" y2="1"><stop stop-color="#FFFFFF"/><stop offset="1" stop-color="#CBE5DC"/></linearGradient>
+   <linearGradient id="active" x1=".05" y1=".05" x2=".95" y2="1"><stop stop-color="#70CDB1"/><stop offset=".55" stop-color="#249C81"/><stop offset="1" stop-color="#157A68"/></linearGradient>
+   
+  </defs>
+ 
+ <g>
+ <path d="M31 38 C23 35 17 41 18 50 C19 56 27 66 38 76 L54 92 C62 100 74 99 80 91 C86 84 80 75 73 68 L48 43 C41 37 37 37 31 38 Z" fill="url(#body)" stroke="#2F675B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+ <path d="M67 81 C73 72 76 60 82 45 L87 30 C91 20 100 17 107 23 C114 28 114 35 109 44 L92 91 C89 101 80 105 72 101 C64 97 62 89 67 81 Z" fill="url(#body)" stroke="#2F675B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+ <path d="M91 24 L97 16 C102 12 108 15 109 19 C111 24 107 30 104 31 Z" fill="url(#body)" stroke="#2F675B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+ <path d="M41 55 L58 75" fill="none" stroke="#2F675B" stroke-width="1.7" stroke-linecap="round" opacity="0.38"/>
+ <path d="M85 56 L77 77" fill="none" stroke="#2F675B" stroke-width="1.6" stroke-linecap="round" opacity="0.34"/>
+ </g>
+ <g><path d="M28 53 Q41 68 55 80 L67 92 Q73 93 76 88 L61 73 L42 53 Z" fill="url(#active)" stroke="#058A74" stroke-width="1.75" stroke-linejoin="round" stroke-linecap="round"/></g>
+ 
+ 
+ </svg>

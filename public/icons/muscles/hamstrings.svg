@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="hamstrings">
+ 
+  
+  
+  
+  <defs>
+   <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ECFFF8"/><stop offset="1" stop-color="#D2EEE5"/></linearGradient>
+   <linearGradient id="body" x1="0" y1="0" x2=".9" y2="1"><stop stop-color="#FFFFFF"/><stop offset="1" stop-color="#CBE5DC"/></linearGradient>
+   <linearGradient id="active" x1=".05" y1=".05" x2=".95" y2="1"><stop stop-color="#70CDB1"/><stop offset=".55" stop-color="#249C81"/><stop offset="1" stop-color="#157A68"/></linearGradient>
+   
+  </defs>
+ 
+ <g>
+ <path d="M38 20 Q64 25 90 20 L99 41 L91 68 L86 85 L84 111 Q81 119 72 119 C65 117 65 111 66 103 L64 81 L60 65 L57 81 L54 104 C54 114 51 119 44 119 C35 119 32 115 33 105 L35 84 L37 67 L28 42 Z" fill="url(#body)" stroke="#2F675B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+ <path d="M62 45 L64 66 L61 87" fill="none" stroke="#2F675B" stroke-width="1.9" stroke-linecap="round" opacity="0.42"/>
+ <path d="M38 82 Q44 87 54 84" fill="none" stroke="#2F675B" stroke-width="1.2" stroke-linecap="round" opacity="0.45"/>
+ <path d="M68 83 Q77 87 88 82" fill="none" stroke="#2F675B" stroke-width="1.2" stroke-linecap="round" opacity="0.45"/>
+ </g>
+ <g><path d="M39 49 L57 52 L54 78 L44 85 L35 77 Z" fill="url(#active)" stroke="#058A74" stroke-width="1.75" stroke-linejoin="round" stroke-linecap="round"/><path d="M70 52 L88 49 L91 77 L81 85 L74 78 Z" fill="url(#active)" stroke="#058A74" stroke-width="1.75" stroke-linejoin="round" stroke-linecap="round"/><path d="M55 60 L60 62 M69 62 L74 60" fill="none" stroke="#2F675B" stroke-width="1.1" stroke-linecap="round" opacity="0.24"/></g>
+ 
+ 
+ </svg>

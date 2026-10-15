@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="glutes">
+ 
+  
+  
+  
+  <defs>
+   <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ECFFF8"/><stop offset="1" stop-color="#D2EEE5"/></linearGradient>
+   <linearGradient id="body" x1="0" y1="0" x2=".9" y2="1"><stop stop-color="#FFFFFF"/><stop offset="1" stop-color="#CBE5DC"/></linearGradient>
+   <linearGradient id="active" x1=".05" y1=".05" x2=".95" y2="1"><stop stop-color="#70CDB1"/><stop offset=".55" stop-color="#249C81"/><stop offset="1" stop-color="#157A68"/></linearGradient>
+   
+  </defs>
+ 
+ <g>
+ <path d="M40 28 C45 19 51 18 64 18 C77 18 84 21 88 28 L97 55 C101 68 97 78 91 89 L88 109 C87 118 75 120 71 111 L64 88 L57 111 C54 120 40 118 39 109 L36 89 C30 79 28 69 31 55 Z" fill="url(#body)" stroke="#2F675B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+ <path d="M64 44 L64 93" fill="none" stroke="#2F675B" stroke-width="2" stroke-linecap="round" opacity="0.42"/>
+ <path d="M39 80 Q51 89 63 89 Q78 91 90 81" fill="none" stroke="#2F675B" stroke-width="1.2" stroke-linecap="round" opacity="0.42"/>
+ </g>
+ <g><path d="M34 57 Q47 45 63 59 L62 89 Q46 101 36 85 Z" fill="url(#active)" stroke="#058A74" stroke-width="1.75" stroke-linejoin="round" stroke-linecap="round"/><path d="M65 59 Q82 46 94 57 L92 85 Q82 101 66 89 Z" fill="url(#active)" stroke="#058A74" stroke-width="1.75" stroke-linejoin="round" stroke-linecap="round"/><path d="M64 55 L64 105" fill="none" stroke="#2F675B" stroke-width="1" stroke-linecap="round" opacity="0.28"/></g>
+ 
+ 
+ </svg>

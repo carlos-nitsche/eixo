@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="abs">
+ 
+  
+  
+  
+  <defs>
+   <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ECFFF8"/><stop offset="1" stop-color="#D2EEE5"/></linearGradient>
+   <linearGradient id="body" x1="0" y1="0" x2=".9" y2="1"><stop stop-color="#FFFFFF"/><stop offset="1" stop-color="#CBE5DC"/></linearGradient>
+   <linearGradient id="active" x1=".05" y1=".05" x2=".95" y2="1"><stop stop-color="#70CDB1"/><stop offset=".55" stop-color="#249C81"/><stop offset="1" stop-color="#157A68"/></linearGradient>
+   
+  </defs>
+ 
+ <g>
+  <path d="M49 44 L43 47 C33 47 27 51 24 60 L15 88 C12 96 17 103 23 104 C29 105 33 100 36 91 L43 75 L44 106 C57 111 71 113 84 106 L85 75 L92 92 C95 101 103 106 109 101 C113 98 113 93 110 87 L103 62 C101 53 95 50 85 47 L79 44 Z" fill="url(#body)" stroke="#2F675B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M57 32 L56 47 L64 52 L72 47 L71 32 Z" fill="url(#body)" stroke="#2F675B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="64" cy="25" r="13" fill="url(#body)" stroke="#2F675B" stroke-width="2"/>
+  <path d="M64 55 L64 105" fill="none" stroke="#2F675B" stroke-width="1.1" stroke-linecap="round" opacity="0.42"/>
+  <path d="M44 73 Q64 79 84 73" fill="none" stroke="#2F675B" stroke-width="1" stroke-linecap="round" opacity="0.34"/>
+ </g>
+ <g><path d="M53 76 Q57 74 62 76 L62 85 L52 85 Z" fill="url(#active)" stroke="#058A74" stroke-width="1.75" stroke-linejoin="round" stroke-linecap="round"/><path d="M66 76 Q72 74 76 76 L76 85 L66 85 Z" fill="url(#active)" stroke="#058A74" stroke-width="1.75" stroke-linejoin="round" stroke-linecap="round"/><path d="M53 87 L62 87 L62 96 L52 96 Z" fill="url(#active)" stroke="#058A74" stroke-width="1.75" stroke-linejoin="round" stroke-linecap="round"/><path d="M66 87 L76 87 L76 96 L66 96 Z" fill="url(#active)" stroke="#058A74" stroke-width="1.75" stroke-linejoin="round" stroke-linecap="round"/><path d="M54 98 L61 98 L61 105 L55 104 Z" fill="url(#active)" stroke="#058A74" stroke-width="1.75" stroke-linejoin="round" stroke-linecap="round"/><path d="M67 98 L75 98 L73 104 L67 105 Z" fill="url(#active)" stroke="#058A74" stroke-width="1.75" stroke-linejoin="round" stroke-linecap="round"/><path d="M55 60 L60 62 M69 62 L74 60" fill="none" stroke="#2F675B" stroke-width="1.1" stroke-linecap="round" opacity="0.24"/></g>
+ 
+ 
+ </svg>

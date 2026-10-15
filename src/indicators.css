@@ -1,0 +1,52 @@
+/* Semantic colors: neutral surfaces keep status signals easy to distinguish. */
+:root{
+ --bg:#f3f5f8;--surface:#fff;--sidebar:#fafbfc;--surface-muted:#f0f3f7;--surface-tint:#eaf1f0;
+ --heading:#182b38;--text:#334654;--text-secondary:#586b7b;--text-muted:#667887;--border:#dbe3ea;--line:#e9eef3;
+ --success:#157347;--success-soft:#e8f6ee;--danger:#bc3545;--danger-soft:#fff0f1;--warning:#94600c;--warning-soft:#fff5dd;
+ --info:#2868b5;--info-soft:#eaf2ff;
+}
+:root[data-theme=dark]{
+ --bg:#10171f;--surface:#1a2531;--sidebar:#151e28;--surface-muted:#222f3d;--surface-tint:#243a36;
+ --heading:#f0f5fa;--text:#dce5ef;--text-secondary:#b6c5d4;--text-muted:#9cadbe;--border:#344454;--line:#2b3948;
+ --success:#7fe0ac;--success-soft:#203c31;--danger:#ff9ba7;--danger-soft:#432932;--warning:#f3cc7d;--warning-soft:#3d3422;
+ --info:#91c0ff;--info-soft:#243952;
+}
+[data-tone=positive]{--signal:var(--success);--signal-soft:var(--success-soft)}
+[data-tone=negative]{--signal:var(--danger);--signal-soft:var(--danger-soft)}
+[data-tone=warning]{--signal:var(--warning);--signal-soft:var(--warning-soft)}
+[data-tone=info]{--signal:var(--info);--signal-soft:var(--info-soft)}
+[data-tone=neutral]{--signal:var(--text-secondary);--signal-soft:var(--surface-muted)}
+:root :is(.metric,.erp-metric,.study-metrics>article,.habit-metrics>article,.ns-stats>div)[data-tone]{background:linear-gradient(135deg,var(--signal-soft),var(--surface) 65%);border:1px solid var(--border);border-top:3px solid var(--signal);box-shadow:var(--shadow)}
+:root :is(.metric,.erp-metric)[data-tone] :is(.metric-value,strong){color:var(--signal)}
+:root .metric.featured[data-tone] .metric-title{color:var(--text-secondary)}
+:root .metric.featured[data-tone] .metric-foot{color:var(--text-secondary)}
+:root .metric.featured[data-tone]:after{display:none}
+:root :is(.metric,.erp-metric,.study-metrics>article,.habit-metrics>article,.ns-stats>div)[data-tone] svg{color:var(--signal)}
+:root :is(.study-metrics>article,.habit-metrics>article,.ns-stats>div)[data-tone]>strong{color:var(--signal)}
+:root .metric[data-tone] .metric-title>svg,:root .erp-metric[data-tone]>div>svg{box-sizing:content-box;padding:7px;border-radius:10px;background:var(--signal-soft);width:17px;height:17px}
+:root .erp-metric[data-tone]>div{align-items:center;min-height:32px}
+:root .metric[data-tone] .metric-title{align-items:center}
+:root .erp-metric[data-tone]>small{color:var(--text-secondary);line-height:1.6}
+:root .green-text{color:var(--success)}:root .red-text{color:var(--danger)}
+:root .icon-tile.softgreen{color:var(--success);background:var(--success-soft)}
+:root .icon-tile.softred{color:var(--danger);background:var(--danger-soft)}
+:root :is(.badge.mint,.erp-tag-good){color:var(--success);background:var(--success-soft)}
+:root :is(.badge.rose,.erp-tag-bad){color:var(--danger);background:var(--danger-soft)}
+:root :is(.badge.amber,.erp-tag-warn){color:var(--warning);background:var(--warning-soft)}
+:root :is(.badge.blue,.erp-tag-info){color:var(--info);background:var(--info-soft)}
+:root .erp-tag{gap:6px;border:1px solid color-mix(in srgb,currentColor 18%,transparent);font-size:11px}
+.erp-tag:before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0}
+.indicator-label{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:650;color:var(--signal,var(--text-secondary));background:var(--signal-soft,var(--surface-muted));border-radius:6px;padding:4px 7px}
+.indicator-legend{display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px;margin:0 0 20px;color:var(--text-secondary);font-size:11px}
+.indicator-legend>span{display:inline-flex;align-items:center;gap:6px}.indicator-legend i{width:7px;height:7px;border-radius:50%;background:var(--signal)}
+:root .legend-dot.dark{background:var(--success)}:root .legend-dot.pale{background:var(--danger)}
+:root .category-row .progress-fill{background:var(--danger)}
+:root .erp-bar-wrap>span{background:var(--success);min-height:0}
+:root .erp-alert-list button[data-tone]{padding:15px 0}
+:root .erp-alert-list button[data-tone]>svg:first-child{color:var(--signal);background:var(--signal-soft);padding:9px;box-sizing:content-box;border-radius:11px}
+:root .erp-alert-list button[data-tone] b{color:var(--signal);line-height:1.5}
+:root .ns-safety.blocked{color:var(--danger);background:var(--danger-soft);border-color:var(--danger)}
+:root .ns-safety.unverified{color:var(--warning);background:var(--warning-soft);border-color:var(--border)}
+:root .task-box.checked{background:var(--success);border-color:var(--success);color:var(--surface)}
+:root :is(.study-progress,.habit-progress)>i{background:var(--success)}
+@media(max-width:600px){:root .metric[data-tone]{min-height:145px}.indicator-legend{font-size:10px;gap:8px 12px}:root .erp-alert-list button[data-tone]{gap:10px}}

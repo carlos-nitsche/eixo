@@ -1,0 +1,18 @@
+.asaas-sandbox-plan{display:grid;gap:10px;padding:13px;margin-top:8px;border:1px solid var(--border);border-radius:13px;background:var(--surface-muted);min-width:0;text-align:left}
+.asaas-sandbox-title{display:flex;align-items:center;gap:7px;font-size:10px;letter-spacing:1px;font-weight:800;color:var(--accent)}
+.asaas-sandbox-plan>p{font-size:11px;color:var(--text-secondary);line-height:1.45;margin:0}
+.asaas-payment-choice{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.asaas-payment-choice>button{display:flex;align-items:center;justify-content:center;gap:7px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);padding:10px 7px;font-size:11px;font-weight:700}
+.asaas-payment-choice>button.selected{border-color:var(--accent);background:var(--accent-soft);color:var(--heading)}
+.asaas-preview-button,.asaas-test-checkout{border:1px solid var(--border);border-radius:9px;min-height:40px;background:var(--ink);color:var(--on-ink);display:flex;align-items:center;justify-content:center;gap:8px;font-size:11px;font-weight:800;padding:9px 12px;text-align:center;text-decoration:none}
+.asaas-preview-button:disabled{opacity:.55;cursor:wait}
+.asaas-preview-details{border-radius:9px;background:var(--surface);border:1px solid var(--border);padding:11px;display:grid;gap:5px}
+.asaas-preview-details>strong{font-size:11px;color:var(--heading)}.asaas-preview-details>small{font-size:11px;color:var(--text-secondary)}.asaas-preview-details>p{margin:0;color:var(--text-muted);font-size:10px;line-height:1.5}
+.asaas-sandbox-plan>small,.asaas-config-note{color:var(--text-muted);font-size:10px;line-height:1.5}
+.asaas-status-pill{display:flex;align-items:center;gap:7px;font-size:10px;color:var(--text-secondary)}
+.asaas-test-entitlement{display:flex;gap:8px;color:var(--accent);font-weight:700;font-size:10px;line-height:1.5}
+.asaas-message{color:var(--text-secondary)!important;font-size:10px!important;margin:0!important}
+.asaas-error{color:var(--danger)!important;font-size:11px!important;line-height:1.5!important;margin:0!important}
+
+.asaas-cancel-button{border:1px solid var(--border);background:var(--surface);color:var(--danger);border-radius:8px;min-height:37px;font-size:11px;font-weight:700;padding:8px 10px}
+.asaas-cancel-button:disabled{opacity:.5;cursor:wait}
