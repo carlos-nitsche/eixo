@@ -76,7 +76,7 @@ export function useLocalVoice(onTranscript:(value:string)=>void,workspaceId:stri
     }else if(data.type==='status'){setNotice(data.message||'Transcrevendo português localmente...')}
     else if(data.type==='error'){
      engine.terminate();worker.current=null;setMode('preview');setProgress(null);
-     setNotice('Transcrição indisponível: '+(data.message||'erro no modelo')+'. O áudio continua disponível para ouvir e tentar novamente.');
+     setNotice('Transcrição indisponível: '+(data.message||'erro no modelo')+'. Tente transcrever novamente, descarte a gravação ou digite o pedido.');
     }else if(data.type==='result'){
      // Keep the model warm inside this worker for the next voice message.
      setProgress(null);
@@ -150,11 +150,5 @@ export function useLocalVoice(onTranscript:(value:string)=>void,workspaceId:stri
   if(mode!=='preview'||!audioBuffer.current)return;
   void transcribe(audioBuffer.current,generation.current);
  };
- const consume=():LocalAudioNote|null=>{
-  if(mode!=='preview'||!note)return null;
-  const snapshot=note;setNote(null);setMode('idle');setElapsed(0);
-  setNotice('Áudio mantido somente nesta conversa, sem upload. Pode digitar o comando para cadastrar.');
-  return snapshot;
- };
- return {mode,note,notice,elapsed,progress,start,stop,reset,retry,consume,recording:mode==='recording',transcribing:mode==='transcribing'};
+ return {mode,note,notice,elapsed,progress,start,stop,reset,retry,recording:mode==='recording',transcribing:mode==='transcribing'};
 }

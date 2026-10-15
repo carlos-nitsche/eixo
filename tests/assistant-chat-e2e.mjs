@@ -78,7 +78,29 @@ try{
  await submit('às 15h');
  await page.waitForFunction(()=>document.querySelector('.eixo-ai-confirm')&&!document.querySelector('.eixo-ai-confirm').disabled,{timeout:9000});
  await page.click('.eixo-ai-abort');
- // Whisper microphone-to-text is covered by tests/whisper-real-e2e.mjs with real Portuguese audio.
+ // Simulate missing local model: voice stays available only for transcription retry or discard.
+ await page.setRequestInterception(true);
+ page.on('request',request=>{
+  if(request.url().includes('/models/eixo-whisper-status.json'))void request.respond({status:404,contentType:'application/json',body:'{}'});
+  else void request.continue();
+ });
+ await page.click('.eixo-ai-mic');
+ await page.waitForSelector('.eixo-ai-audio-active:not(.local)',{timeout:9000});
+ await wait(1200);
+ await page.click('.eixo-ai-audio-active button');
+ await page.waitForSelector('.eixo-ai-audio-preview',{timeout:10000});
+ const fallback=await page.$eval('.eixo-ai-audio-preview',element=>({
+  actions:Array.from(element.querySelectorAll('button')).map(button=>button.textContent.trim()),
+  playable:!!element.querySelector('audio[controls]'),
+ }));
+ assert.equal(fallback.playable,true);
+ assert.equal(fallback.actions.length,2,'Only discard/retry actions should remain');
+ assert(fallback.actions.some(action=>action.includes('Descartar')));
+ assert(fallback.actions.some(action=>action.includes('Tentar transcrição')));
+ const beforeDiscard=await page.$$('.eixo-ai-row audio');
+ assert.equal(beforeDiscard.length,0,'Audio messages must not appear in chat');
+ await page.click('.eixo-ai-audio-preview button:first-child');
+ await page.waitForFunction(()=>!document.querySelector('.eixo-ai-audio-preview'),{timeout:5000});
  const afterCancel=(await api('/api/state')).data.state;
  assert.equal(afterCancel.collections.events.length,1,'cancel must not write a record');
  for(const width of [320,375,390,768]){

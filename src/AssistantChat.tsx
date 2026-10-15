@@ -1,15 +1,14 @@
 // EIXO OS v0.8 — React 19, professional local assistant, private microphone recording.
 import {useEffect,useRef,useState} from 'react';
 import type {FormEvent,KeyboardEvent,ReactNode} from 'react';
-import {ArrowUp,BookOpen,CalendarDays,Check,ChevronRight,Clock3,Headphones,MessageCircle,Mic,MicOff,Minus,RotateCcw,ShieldCheck,Sparkles,Square,Trash2,Wallet,X,ListTodo,Send,AudioLines,PenLine} from 'lucide-react';
+import {ArrowUp,BookOpen,CalendarDays,Check,ChevronRight,Headphones,Mic,Minus,ShieldCheck,Sparkles,Square,Trash2,Wallet,X,ListTodo,AudioLines} from 'lucide-react';
 import type {Entry} from './model';
 import {interpretAssistant,labelField} from './assistant-local';
 import type {Draft,AssistantKind} from './assistant-local';
 import {useLocalVoice} from './useLocalVoice';
-import type {LocalAudioNote} from './useLocalVoice';
 import './assistant-chat.css';
 
-type Message={id:number;sender:'assistant'|'user';text:string;kind?:AssistantKind;audio?:LocalAudioNote;success?:boolean};
+type Message={id:number;sender:'assistant'|'user';text:string;kind?:AssistantKind;success?:boolean};
 type Props={workspaceId:string;workspaceName:string;tasks:Entry[];events:Entry[];transactions:Entry[];onCreate:(draft:Draft)=>boolean;enabled:boolean};
 const welcome='Olá! Eu sou o Assistente EIXO. Posso organizar sua agenda, criar tarefas, registrar gastos e receitas e acompanhar estudos. Me conte o que precisa — eu preparo tudo para você conferir antes de salvar.';
 const suggestions=[
@@ -108,11 +107,6 @@ export default function AssistantChat({workspaceId,workspaceName,tasks,events,tr
  const cancel=()=>{setPending(null);add('assistant','Pronto, descartei a prévia. Não houve nenhuma alteração. Se quiser, podemos começar outro pedido.')};
  const onSubmit=(event:FormEvent)=>{event.preventDefault();send(input)};
  const onKeyDown=(event:KeyboardEvent<HTMLTextAreaElement>)=>{if(event.key==='Enter'&&!event.shiftKey&&!event.nativeEvent.isComposing){event.preventDefault();send(input)}};
- const sendAudio=()=>{
-  const audio=voice.consume();if(!audio)return;
-  add('user','Mensagem de voz gravada no dispositivo',{audio});
-  add('assistant','Recebi a gravação local. Sem um reconhecedor de voz instalado no navegador, não consigo interpretar o áudio automaticamente. Você pode ouvi-lo aqui e escrever o pedido para eu preparar o registro.');
- };
  const close=()=>{voice.reset();setOpen(false)};
  const showExamples=!pending&&messages.length<=2;
  return <>
@@ -124,7 +118,7 @@ export default function AssistantChat({workspaceId,workspaceName,tasks,events,tr
     <div className="eixo-ai-date-rule"><span>CONVERSA ATUAL</span></div>
     {messages.map(message=><div className={'eixo-ai-row '+message.sender} key={message.id}>
      {message.sender==='assistant'&&<span className="eixo-ai-mini-avatar"><Sparkles size={13}/></span>}
-     <div className={'eixo-ai-bubble '+(message.success?'success':'')} data-kind={message.kind||'general'}>{message.success&&<Check size={14}/>}<span>{message.text}</span>{message.audio&&<audio controls preload="metadata" src={message.audio.url} aria-label="Áudio gravado localmente"/>}</div>
+     <div className={'eixo-ai-bubble '+(message.success?'success':'')} data-kind={message.kind||'general'}>{message.success&&<Check size={14}/>}<span>{message.text}</span></div>
     </div>)}
     {pending&&<Preview draft={pending} busy={busy} onCancel={cancel} onConfirm={confirm}/>}
     {showExamples&&<div className="eixo-ai-suggestions"><span>O QUE VOCÊ GOSTARIA DE FAZER?</span>{suggestions.map(item=><button key={item.text} data-kind={item.kind} type="button" onClick={()=>send(item.text)}><span className="eixo-ai-exampleicon">{meta[item.kind].icon}</span><span>{item.text}</span><ChevronRight size={15}/></button>)}</div>}
@@ -132,14 +126,14 @@ export default function AssistantChat({workspaceId,workspaceName,tasks,events,tr
    </div>
    {voice.mode==='recording'&&<div className="eixo-ai-audio-active" role="status"><span className="eixo-ai-red-dot"/><AudioLines size={17}/><strong>Gravando áudio</strong><time>{Math.floor(voice.elapsed/60)}:{String(voice.elapsed%60).padStart(2,'0')}</time><button type="button" onClick={voice.stop} aria-label="Parar gravação"><Square size={14}/> Parar</button></div>}
    {voice.transcribing&&<div className="eixo-ai-audio-active local" role="status"><AudioLines size={17}/><span><strong>Whisper local</strong> · Transcrevendo português{voice.progress!==null?' · '+voice.progress+'%':''}...</span><button type="button" onClick={voice.reset}><X size={14}/> Cancelar</button></div>}
-   {voice.note&&voice.mode==='preview'&&<div className="eixo-ai-audio-preview"><span className="eixo-ai-recording-label"><Headphones size={14}/> Áudio local · {voice.note.seconds}s</span><audio controls preload="metadata" src={voice.note.url} aria-label="Ouvir gravação"/><div><button type="button" onClick={voice.reset}><Trash2 size={13}/> Descartar</button><button type="button" onClick={voice.retry}><AudioLines size={13}/> Tentar transcrição</button><button type="button" onClick={sendAudio}><Send size={13}/> Guardar áudio</button></div></div>}
+   {voice.note&&voice.mode==='preview'&&<div className="eixo-ai-audio-preview"><span className="eixo-ai-recording-label"><Headphones size={14}/> Prévia da gravação para transcrição · {voice.note.seconds}s</span><audio controls preload="metadata" src={voice.note.url} aria-label="Ouvir gravação"/><div><button type="button" onClick={voice.reset}><Trash2 size={13}/> Descartar</button><button type="button" onClick={voice.retry}><AudioLines size={13}/> Tentar transcrição</button></div></div>}
    {voice.notice&&<div className="eixo-ai-voice-notice" role="status">{voice.notice}</div>}
    <form className="eixo-ai-compose" onSubmit={onSubmit}>
     <button type="button" className={'eixo-ai-mic '+(voice.recording?'active':'')} aria-label={voice.recording?'Parar microfone':'Gravar ou ditar por voz'} title="Microfone · transcrição no dispositivo quando disponível" disabled={voice.mode==='checking'||voice.mode==='preview'} onClick={()=>{if(voice.recording)voice.stop();else void voice.start()}}>{voice.recording?<Square size={17}/>:<Mic size={19}/>}</button>
     <textarea ref={textarea} rows={2} maxLength={800} value={input} onChange={e=>setInput(e.target.value)} onKeyDown={onKeyDown} placeholder={pending?'Informe ou corrija os detalhes...':'Peça para agendar, registrar ou organizar...'} aria-label="Mensagem para Assistente EIXO"/>
     <button type="submit" className="eixo-ai-send" title="Enviar mensagem" aria-label="Enviar mensagem" disabled={!input.trim()||busy}><ArrowUp size={19}/></button>
    </form>
-   <footer className="eixo-ai-foot"><span><ShieldCheck size={12}/> Whisper offline · Áudio fica no dispositivo</span><span>Enter envia · Shift+Enter pula linha</span></footer>
+   <footer className="eixo-ai-foot"><span><ShieldCheck size={12}/> Apenas texto entra no chat · Whisper offline</span><span>Enter envia · Shift+Enter pula linha</span></footer>
   </section>}
  </>;
 }
