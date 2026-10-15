@@ -74,8 +74,8 @@ function securityHeaders(req,res){
  res.setHeader('X-Frame-Options','DENY');
  res.setHeader('Referrer-Policy','strict-origin-when-cross-origin');
  res.setHeader('Cross-Origin-Opener-Policy','same-origin');
- res.setHeader('Permissions-Policy','camera=(self), microphone=(self), geolocation=(), payment=()');
- res.setHeader('Content-Security-Policy',"default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'wasm-unsafe-eval'; media-src 'self' blob:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self' blob:");
+ res.setHeader('Permissions-Policy','camera=(self), microphone=(), geolocation=(), payment=()');
+ res.setHeader('Content-Security-Policy',"default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; media-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self' blob:");
  if(secure(req)&&process.env.EIXO_PRIVATE_ACCESS==='1')res.setHeader('Strict-Transport-Security','max-age=604800');
 }
 function knownHost(req){
@@ -405,7 +405,7 @@ async function staticFile(req,res,url){
  if(!file.startsWith(root+path.sep)&&file!==root)return fail(res,403,'Acesso negado.');
  if(!fs.existsSync(file)||fs.statSync(file).isDirectory())file=path.join(root,'index.html');
  const ext=path.extname(file),type=mime[ext]||'application/octet-stream';
- res.writeHead(200,{'Content-Type':type,'X-Content-Type-Options':'nosniff','Referrer-Policy':'strict-origin-when-cross-origin','Cache-Control':ext==='.html'||pathname==='/sw.js'||/^\/assets\/whisper-local\.worker-[^/]+\.js$/.test(pathname)||pathname.startsWith('/whisper-wasm/')?'no-store':'public, max-age=3600'});
+ res.writeHead(200,{'Content-Type':type,'X-Content-Type-Options':'nosniff','Referrer-Policy':'strict-origin-when-cross-origin','Cache-Control':ext==='.html'||pathname==='/sw.js'?'no-store':'public, max-age=3600'});
  if(req.method==='HEAD')return res.end();fs.createReadStream(file).pipe(res);
 }
 await initDb();

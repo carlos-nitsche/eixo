@@ -65,7 +65,3 @@ server-data/asaas-*.txt
 .qa-asaas-live-guards/
 asaas-sandbox-backup-*/
 server-data/asaas-production-secrets*
-
-# Offline speech-to-text assets are installed locally; never commit ~75 MB model binaries.
-/public/models/
-/public/whisper-wasm/

@@ -103,3 +103,54 @@ test('speaking natural Portuguese hours becomes time fields with clean titles',(
  assert.equal(event.draft.fields.date,'2026-10-16');
  assert.equal(event.draft.fields.title,'consulta');
 });
+
+test('local parser understands projects, goals and recurring habits',()=>{
+ const project=plan('Crie um projeto chamado Reforma da loja');
+ assert.equal(project.type,'draft');assert.equal(project.draft.kind,'projects');
+ assert.equal(project.draft.missing.length,0);
+ assert(/reforma da loja/i.test(project.draft.fields.title));
+ const habit=plan('Quero um hábito de ler todos os dias');
+ assert.equal(habit.type,'draft');assert.equal(habit.draft.kind,'habits');
+ assert.equal(habit.draft.fields.frequency,'Diária');
+ assert(!habit.draft.missing.length);
+ const goal=plan('Crie uma meta de juntar R$ 2.000');
+ assert.equal(goal.type,'draft');assert.equal(goal.draft.kind,'goals');
+ assert.equal(goal.draft.fields.target,2000);
+ assert.equal(goal.draft.fields.unit,'R$');
+ assert.equal(goal.draft.missing.length,0);
+});
+test('task intent, priority and dates use conversational phrasing',()=>{
+ const task=plan('Não posso esquecer de entregar o documento amanhã, urgente');
+ assert.equal(task.type,'draft');assert.equal(task.draft.kind,'tasks');
+ assert.equal(task.draft.fields.dueDate,'2026-10-16');
+ assert.equal(task.draft.fields.priority,'Alta');
+ assert(!task.draft.missing.length);
+});
+test('financial request to pay a consultation must not be misclassified as a new event',()=>{
+ const result=plan('Paguei R$ 170 pela consulta médica hoje');
+ assert.equal(result.draft.kind,'transactions');
+ assert.equal(result.draft.fields.amount,170);
+ assert.equal(result.draft.fields.type,'Despesa');
+ assert.equal(result.draft.fields.category,'Saúde');
+});
+test('ambiguous request does not fabricate a completed title',()=>{
+ const result=plan('registre uma tarefa');
+ assert.equal(result.draft.kind,'tasks');
+ assert(result.draft.missing.includes('title'));
+ const followup=interpretAssistant('renovar documento','pessoal',now,result.draft);
+ assert.equal(followup.draft.fields.title,'renovar documento');
+ assert.deepEqual(followup.draft.missing,[]);
+});
+test('read-only summaries for projects and habits isolate workspaces',()=>{
+ const data={tasks:[],events:[],transactions:[],projects:[{id:'1',title:'Meu site',workspaceId:'pessoal'},{id:'2',title:'SEGREDO',workspaceId:'empresa'}],habits:[{id:'3',title:'Caminhada',workspaceId:'pessoal'}],goals:[],studies:[]};
+ const r=plan('Quantos projetos eu tenho?','pessoal',data);
+ assert.equal(r.type,'reply');
+ assert(r.reply.includes('Meu site'));
+ assert(!r.reply.includes('SEGREDO'));
+ const h=plan('mostre meus hábitos','pessoal',data);
+ assert(h.reply.includes('Caminhada'));
+});
+test('unsupported requests do not simulate universal language understanding',()=>{
+ const r=plan('Qual vai ser o resultado do jogo amanhã?');
+ assert.equal(r.type,'unknown');
+});

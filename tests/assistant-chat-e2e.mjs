@@ -32,7 +32,7 @@ try{
  const token=new URL(mail.match(/http:\/\/\S+/)[0]).searchParams.get('token');
  assert.equal((await api('/api/auth/verify','POST',{token})).status,200);
  assert.equal((await api('/api/auth/login','POST',{email,password})).status,200);
- const state=emptyDemoState({name:'Assistente QA',enabledModules:['agenda','financeiro','estudos'],onboardingVersion:1});
+ const state=emptyDemoState({name:'Assistente QA',enabledModules:['agenda','financeiro','estudos','projetos','habitos'],onboardingVersion:1});
  assert.equal((await api('/api/state','PUT',{baseVersion:0,state})).status,200);
  browser=await puppeteer.launch({executablePath:'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',headless:true,args:['--no-sandbox','--disable-gpu','--use-fake-device-for-media-stream','--use-fake-ui-for-media-stream'],timeout:22000});
  const page=await browser.newPage();
@@ -78,29 +78,27 @@ try{
  await submit('às 15h');
  await page.waitForFunction(()=>document.querySelector('.eixo-ai-confirm')&&!document.querySelector('.eixo-ai-confirm').disabled,{timeout:9000});
  await page.click('.eixo-ai-abort');
- // Simulate missing local model: voice stays available only for transcription retry or discard.
- await page.setRequestInterception(true);
- page.on('request',request=>{
-  if(request.url().includes('/models/eixo-whisper-status.json'))void request.respond({status:404,contentType:'application/json',body:'{}'});
-  else void request.continue();
- });
- await page.click('.eixo-ai-mic');
- await page.waitForSelector('.eixo-ai-audio-active:not(.local)',{timeout:9000});
- await wait(1200);
- await page.click('.eixo-ai-audio-active button');
- await page.waitForSelector('.eixo-ai-audio-preview',{timeout:10000});
- const fallback=await page.$eval('.eixo-ai-audio-preview',element=>({
-  actions:Array.from(element.querySelectorAll('button')).map(button=>button.textContent.trim()),
-  playable:!!element.querySelector('audio[controls]'),
- }));
- assert.equal(fallback.playable,true);
- assert.equal(fallback.actions.length,2,'Only discard/retry actions should remain');
- assert(fallback.actions.some(action=>action.includes('Descartar')));
- assert(fallback.actions.some(action=>action.includes('Tentar transcrição')));
- const beforeDiscard=await page.$$('.eixo-ai-row audio');
- assert.equal(beforeDiscard.length,0,'Audio messages must not appear in chat');
- await page.click('.eixo-ai-audio-preview button:first-child');
- await page.waitForFunction(()=>!document.querySelector('.eixo-ai-audio-preview'),{timeout:5000});
+ const noAudio=await page.$$('button.eixo-ai-mic, .eixo-ai-audio-preview, audio');
+ assert.equal(noAudio.length,0,'The assistant must not expose audio UI');
+ await submit('Crie um projeto chamado Reforma da loja');
+ await page.waitForFunction(()=>document.querySelector('.eixo-ai-draft')?.dataset.kind==='projects',{timeout:9000});
+ await page.click('.eixo-ai-confirm');
+ const afterProject=await persisted(s=>s.collections.projects.length===1);
+ assert(/reforma da loja/i.test(afterProject.collections.projects[0].title));
+ await submit('Quero criar um hábito de ler todos os dias');
+ await page.waitForFunction(()=>document.querySelector('.eixo-ai-draft')?.dataset.kind==='habits',{timeout:9000});
+ const habitPreview=await page.$eval('.eixo-ai-draft',el=>el.innerText);
+ assert(habitPreview.includes('Diária'));
+ await page.click('.eixo-ai-confirm');
+ const afterHabit=await persisted(s=>s.collections.habits.length===1);
+ assert.equal(afterHabit.collections.habits[0].frequency,'Diária');
+ await submit('Crie uma meta de juntar R$ 2000');
+ await page.waitForFunction(()=>document.querySelector('.eixo-ai-draft')?.dataset.kind==='goals',{timeout:9000});
+ await page.click('.eixo-ai-confirm');
+ const afterGoal=await persisted(s=>s.collections.goals.length===1);
+ assert.equal(afterGoal.collections.goals[0].target,2000);
+ const postFeatures=await page.$$('.eixo-ai-mic, .eixo-ai-audio-preview, audio');
+ assert.equal(postFeatures.length,0,'Audio UI must remain absent after multiple requests');
  const afterCancel=(await api('/api/state')).data.state;
  assert.equal(afterCancel.collections.events.length,1,'cancel must not write a record');
  for(const width of [320,375,390,768]){

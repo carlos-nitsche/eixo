@@ -32,6 +32,9 @@
 .eixo-ai-draft[data-kind="tasks"]{--kind:#b87b18;--kind-bg:#e9ad2d18}
 .eixo-ai-draft[data-kind="transactions"]{--kind:#128b6c;--kind-bg:#12ab8516}
 .eixo-ai-draft[data-kind="studies"]{--kind:#8663c7;--kind-bg:#9c6adc17}
+.eixo-ai-draft[data-kind="projects"]{--kind:#298fbd;--kind-bg:#298fbd17}
+.eixo-ai-draft[data-kind="goals"]{--kind:#b08321;--kind-bg:#b0832119}
+.eixo-ai-draft[data-kind="habits"]{--kind:#8a65bc;--kind-bg:#8a65bc17}
 .eixo-ai-drafthead{display:flex;align-items:center;justify-content:space-between;gap:9px;color:var(--text);font-size:11px;letter-spacing:0}
 .eixo-ai-drafthead>span:first-child{display:flex;align-items:center;gap:9px}
 .eixo-ai-drafthead strong,.eixo-ai-drafthead small{display:block}
@@ -69,25 +72,12 @@
 .eixo-ai-exampleicon{color:#2d86c8;width:31px;height:31px;border-radius:9px;background:#248ac817;display:grid;place-items:center;flex-shrink:0}
 .eixo-ai-suggestions button[data-kind="transactions"] .eixo-ai-exampleicon{background:#0aa97617;color:#10976c}
 .eixo-ai-suggestions button[data-kind="tasks"] .eixo-ai-exampleicon{background:#d79a2516;color:#b7801b}
-.eixo-ai-audio-active,.eixo-ai-audio-preview{display:flex;align-items:center;gap:9px;margin:0 13px 9px;padding:10px;border-radius:11px;border:1px solid #d256564a;background:color-mix(in srgb,#e45c52 10%,var(--surface));color:var(--text);font-size:11px}
-.eixo-ai-audio-active strong{font-weight:800;flex:1}
-.eixo-ai-audio-active time{font-variant-numeric:tabular-nums;font-size:12px;font-weight:850}
-.eixo-ai-audio-active button{border:1px solid #d45d5b66;color:var(--text);border-radius:8px;background:var(--surface);padding:7px 10px;display:flex;align-items:center;gap:5px}
-.eixo-ai-audio-active.local{background:color-mix(in srgb,#3e88c7 11%,var(--surface));border-color:#3e88c75b}
-.eixo-ai-audio-active.local>span{flex:1}
-.eixo-ai-red-dot{width:9px;height:9px;border-radius:50%;background:#d94a45;box-shadow:0 0 0 4px #d94a4531}
-.eixo-ai-audio-preview{border-color:var(--border);background:var(--surface-muted);flex-direction:column;align-items:stretch}
-.eixo-ai-recording-label{display:flex;align-items:center;gap:7px;color:var(--text);font-weight:700}
-.eixo-ai-audio-preview audio{width:100%;height:36px}
-.eixo-ai-audio-preview>div{display:flex;justify-content:flex-end;gap:8px}
-.eixo-ai-audio-preview button{display:flex;align-items:center;gap:6px;border-radius:7px;border:1px solid var(--border);background:var(--surface);color:var(--text);padding:6px 10px;font-size:11px;font-weight:700}
-.eixo-ai-audio-preview button:last-child{background:#193654;color:#fff;border-color:#193654}
-.eixo-ai-voice-notice{font-size:10px;color:var(--text-secondary);background:var(--surface-muted);padding:7px 14px;line-height:1.4;border-top:1px solid var(--border)}
+.eixo-ai-suggestions button[data-kind="goals"] .eixo-ai-exampleicon{background:#d79a2516;color:#b7801b}
+.eixo-ai-suggestions button[data-kind="projects"] .eixo-ai-exampleicon{background:#298fbd18;color:#298fbd}
+.eixo-ai-suggestions button[data-kind="habits"] .eixo-ai-exampleicon{background:#8a65bc17;color:#8a65bc}
 .eixo-ai-compose{display:flex;align-items:flex-end;gap:7px;margin:0 11px 7px;padding:6px;border:1px solid var(--border);border-radius:13px;background:var(--surface-muted)}
 .eixo-ai-compose textarea{flex:1;min-width:0;min-height:40px;max-height:114px;resize:none;outline:none;background:transparent;border:0;font-size:13px;color:var(--text);font-family:inherit;padding:8px 3px;line-height:1.5}
 .eixo-ai-compose button{display:grid;place-items:center;flex-shrink:0;min-width:39px;height:39px;border-radius:9px;border:0}
-.eixo-ai-compose button.eixo-ai-mic{color:var(--text-secondary);background:var(--surface);border:1px solid var(--border)}
-.eixo-ai-compose button.eixo-ai-mic.active{color:#cb5554;background:#f65f5f15;border-color:#e56e6e73}
 .eixo-ai-compose button.eixo-ai-send{background:#1a3855;color:#fff}
 .eixo-ai-compose button:disabled{opacity:.4;cursor:not-allowed}
 .eixo-ai-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:0 12px 10px;font-size:9px;color:var(--text-muted);line-height:1.45}
