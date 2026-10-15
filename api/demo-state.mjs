@@ -14,7 +14,7 @@ export function emptyDemoState(preferences={}) {
 export function createDemoState(preferences={},referenceDate=new Date()) {
  const clock=new Date(referenceDate);
  if(!Number.isFinite(clock.getTime()))throw new Error('Data da demonstração inválida.');
- const anchor=new Date(Date.UTC(clock.getFullYear(),clock.getMonth(),clock.getDate(),12));
+ const anchor=new Date(Date.UTC(clock.getUTCFullYear(),clock.getUTCMonth(),clock.getUTCDate(),12));
  const day=offset=>{const date=new Date(anchor);date.setUTCDate(date.getUTCDate()+offset);return date.toISOString().slice(0,10)};
  const at=(offset,hour=12)=>day(offset)+`T${String(hour).padStart(2,'0')}:00:00.000Z`;
  const ws='demo-workspace',createdAt=at(-90);
@@ -52,7 +52,7 @@ export function createDemoState(preferences={},referenceDate=new Date()) {
   s.study.exams.push({...base(),subjectId:subject.id,title:'Avaliação concluída',date:day(-5-index),weight:1,grade:8+index*.5,maximum:10,notes:''},
    {...base(),subjectId:subject.id,title:'Próxima avaliação',date:day(7+index*4),weight:2,maximum:10,notes:'Conteúdo dos últimos capítulos.'});
   for(let n=0;n<3;n++){
-   const card={...base(),subjectId:subject.id,front:['O que é uma meta mensurável?','Como organizar uma revisão?','Qual a diferença entre receita e lucro?'][n],back:['Um objetivo acompanhado por um indicador e prazo.','Revisitar o conteúdo e testar a lembrança sem consultar as anotações.','Receita é o valor das vendas; lucro considera também os custos e despesas.'][n],dueDate:day(n-1),interval:3,ease:2.5,reviews:1,lastGrade:2,lastReviewedAt:at(-3)};
+   const card={...base(),subjectId:subject.id,sourceNoteId:'',front:['O que é uma meta mensurável?','Como organizar uma revisão?','Qual a diferença entre receita e lucro?'][n],back:['Um objetivo acompanhado por um indicador e prazo.','Revisitar o conteúdo e testar a lembrança sem consultar as anotações.','Receita é o valor das vendas; lucro considera também os custos e despesas.'][n],dueDate:day(n-1),interval:3,ease:2.5,reviews:1,lastGrade:2,lastReviewedAt:at(-3)};
    s.study.cards.push(card);s.study.reviews.push({...base(),cardId:card.id,at:at(-3),grade:2,previousDue:day(-3),nextDue:card.dueDate});
   }
  }

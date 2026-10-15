@@ -1,1 +1,25 @@
-const CACHE='eixo-v4-identity';self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(c=>c.addAll(['/favicon.svg','/manifest.webmanifest'])).then(()=>self.skipWaiting()))});self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('eixo-')&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()))});self.addEventListener('fetch',event=>{const req=event.request;const url=new URL(req.url);if(req.method!=='GET'||url.origin!==self.location.origin||url.pathname.startsWith('/api/')||req.mode==='navigate')return;event.respondWith(fetch(req).then(res=>{if(res.ok){const cloned=res.clone();caches.open(CACHE).then(c=>c.put(req,cloned))}return res}).catch(()=>caches.match(req)))});
+// EIXO OS — service worker v0.4: bounded static assets only; never caches accounts, API or documents.
+const CACHE='eixo-static-v5',LIMIT=110;
+const INITIAL=['/favicon.svg','/manifest.webmanifest'];
+const staticAsset=pathname=>pathname==='/favicon.svg'||pathname==='/manifest.webmanifest'||/^\/(assets|brand|icons)\//.test(pathname);
+self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(INITIAL)).then(()=>self.skipWaiting())));
+self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith('eixo-')&&key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim())));
+self.addEventListener('fetch',event=>{
+ const req=event.request,url=new URL(req.url);
+ if(req.method!=='GET'||url.origin!==self.location.origin||!staticAsset(url.pathname)||req.headers.has('range'))return;
+ event.respondWith((async()=>{
+  const cache=await caches.open(CACHE);
+  try{
+   const response=await fetch(req);
+   if(response.ok&&response.type==='basic'){
+    const cached=response.clone();
+    event.waitUntil((async()=>{
+     await cache.put(req,cached);
+     const keys=await cache.keys();
+     if(keys.length>LIMIT)await Promise.all(keys.slice(0,keys.length-LIMIT).map(key=>cache.delete(key)));
+    })().catch(()=>{}));
+   }
+   return response;
+  }catch{return await cache.match(req)||Response.error()}
+ })());
+});

@@ -11,7 +11,9 @@ import { parseERP } from './erp';
 import { parseTraining } from './training';
 import {parseNutrition} from './nutrition';
 import {parseStudy} from './study';
-import {isCloud,enqueueCloud,runErpCommand} from './cloud';
+import {isCloud,enqueueCloud,runErpCommand,hasPendingChanges,syncCloud} from './cloud';
+import {normalizeSearch,searchWorkspaceRecords} from './global-search';
+import {getActionCenter} from './action-center';
 import {emptyDemoState} from '../api/demo-state.mjs';
 const BusinessERP=lazy(()=>import('./BusinessERP'));
 const TrainingStudio=lazy(()=>import('./TrainingStudio'));
@@ -80,6 +82,32 @@ export default function App(){
  const [searchOpen,setSearchOpen]=useState(false),[search,setSearch]=useState('');
  const {navOpen,setNavOpen,drawer}=useMobileNavigation();
  const [toast,setToast]=useState('');
+ const [isOnline,setIsOnline]=useState(()=>navigator.onLine);
+ const [backendReachable,setBackendReachable]=useState(true);
+ const [syncPending,setSyncPending]=useState(false);
+ const [storageWarning,setStorageWarning]=useState(false);
+ useEffect(()=>{
+  let alive=true;
+  const check=async()=>{
+   if(!navigator.onLine){if(alive)setBackendReachable(false);return}
+   const controller=new AbortController(),timeout=window.setTimeout(()=>controller.abort(),6500);
+   try{const response=await fetch('/api/health',{cache:'no-store',credentials:'same-origin',signal:controller.signal});
+    if(alive)setBackendReachable(response.ok&&(await response.json()).ok===true)}
+   catch{if(alive)setBackendReachable(false)}finally{window.clearTimeout(timeout)}
+  };
+  void check();const timer=window.setInterval(()=>void check(),30000);
+  const onActive=()=>{if(document.visibilityState==='visible')void check()};
+  window.addEventListener('online',onActive);document.addEventListener('visibilitychange',onActive);
+  return()=>{alive=false;window.clearInterval(timer);window.removeEventListener('online',onActive);document.removeEventListener('visibilitychange',onActive)};
+ },[]);
+ useEffect(()=>{
+  const update=()=>{setIsOnline(navigator.onLine);setSyncPending(hasPendingChanges())};
+  const poll=window.setInterval(update,1200);update();
+  window.addEventListener('online',update);window.addEventListener('offline',update);
+  const beforeLeave=(event:BeforeUnloadEvent)=>{if(hasPendingChanges()){event.preventDefault();event.returnValue=''}};
+  window.addEventListener('beforeunload',beforeLeave);
+  return()=>{window.clearInterval(poll);window.removeEventListener('online',update);window.removeEventListener('offline',update);window.removeEventListener('beforeunload',beforeLeave)};
+ },[]);
  const [demoBusy,setDemoBusy]=useState(false);
  const changeDemo=async(load:boolean)=>{
   if(demoBusy)return;
@@ -102,12 +130,17 @@ export default function App(){
  const [tab,setTab]=useState('Todos');
  const importRef=useRef<HTMLInputElement>(null);
  const activeWorkspace=store.preferences.workspaceId;
+ useEffect(()=>{if(activeWorkspace!=='pessoal'&&!store.collections.businesses.some(b=>b.id===activeWorkspace)){setStore(s=>({...s,preferences:{...s.preferences,workspaceId:'pessoal'}}));setToast('O espaço anterior não está mais disponível. Retornamos ao espaço pessoal.')}},[activeWorkspace,store.collections.businesses]);
  const workspaceList=[{id:'pessoal',title:'Meu espaço pessoal'},...store.collections.businesses.map(x=>({id:x.id,title:x.title}))];
  const items=(key:Collection)=>key==='businesses'?store.collections[key]:store.collections[key].filter(x=>(x.workspaceId||'pessoal')===activeWorkspace);
  const all=(key:Collection)=>store.collections[key];
  const editPrefs=(changes:Partial<Store['preferences']>)=>setStore(s=>({...s,preferences:{...s.preferences,...changes}}));
- useEffect(()=>{if(isCloud()){sessionStorage.setItem(STORAGE_KEY,JSON.stringify(store));enqueueCloud(store)}else{localStorage.setItem(STORAGE_KEY,JSON.stringify(store))}},[store]);
- useEffect(()=>{document.documentElement.setAttribute('data-theme',store.preferences.theme);localStorage.setItem('eixo-theme',store.preferences.theme);document.querySelector('meta[name="theme-color"]')?.setAttribute('content',store.preferences.theme==='dark'?'#10171f':'#f3f5f8')},[store.preferences.theme]);
+ useEffect(()=>{
+  try{if(isCloud())sessionStorage.setItem(STORAGE_KEY,JSON.stringify(store));else localStorage.setItem(STORAGE_KEY,JSON.stringify(store));setStorageWarning(false)}
+  catch{setStorageWarning(true)}
+  if(isCloud())enqueueCloud(store);
+ },[store]);
+ useEffect(()=>{document.documentElement.setAttribute('data-theme',store.preferences.theme);try{localStorage.setItem('eixo-theme',store.preferences.theme)}catch{}document.querySelector('meta[name="theme-color"]')?.setAttribute('content',store.preferences.theme==='dark'?'#10171f':'#f3f5f8')},[store.preferences.theme]);
  useEffect(()=>{if(!toast)return;const t=setTimeout(()=>setToast(''),3200);return()=>clearTimeout(t)},[toast]);
  useEffect(()=>{function keyboard(e:KeyboardEvent){if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();setSearchOpen(v=>!v)}if(e.key==='Escape'){setSearchOpen(false);setModal(null)}if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='j'){e.preventDefault();if(can('agenda'))openCreate('tasks')}}window.addEventListener('keydown',keyboard);return()=>window.removeEventListener('keydown',keyboard)},[enabledKey]);
  const openCreate=(kind:Collection)=>{setForm(initialValues(kind));setModal({kind})};
@@ -128,16 +161,28 @@ export default function App(){
  const weekStart=shiftDay(trainingToday,-((new Date(trainingToday+'T12:00:00Z').getUTCDay()+6)%7));
  const thisWeekTraining=(store.training?.sessions||[]).filter(s=>s.workspaceId===activeWorkspace).filter(s=>{const day=completedSessionDate(s,trainingTime);return day&&day>=weekStart&&day<=trainingToday}).length;
  const studiedMinutes=sum(studies,undefined,'duration');
+ const actionNotices=getActionCenter({tasks:task,events:event,erp:store.erp,workspaceId:activeWorkspace,today:today()}).filter(notice=>can(notice.page));
  const futureEvents=[...event].filter(x=>String(x.date||'')>=today()).sort((a,b)=>String(a.date)+String(a.time||'')>String(b.date)+String(b.time||'')?1:-1);
  const monthFlow=useMemo(()=>Array.from({length:6},(_,idx)=>{const d=new Date();d.setDate(1);d.setMonth(d.getMonth()-5+idx);const m=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;const subset=tx.filter(x=>String(x.date||'').startsWith(m));return {month:d.toLocaleDateString('pt-BR',{month:'short'}).replace('.',''),Receitas:sum(subset,x=>x.type==='Receita'),Despesas:sum(subset,x=>x.type!=='Receita')}}),[store,activeWorkspace]);
  const commonActions=(key:Collection)=> <button className="btn primary" onClick={()=>openCreate(key)}><Plus size={17}/>Adicionar {config[key].singular}</button>;
  const editActions=(key:Collection,x:Entry)=><MenuActions onEdit={()=>openEdit(key,x)} onDelete={()=>remove(key,x)}/>;
  const empty=(key:Collection,Icon:typeof Home,title?:string)=> <Empty icon={Icon} title={title||'Nenhum registro ainda'} body="Seus registros aparecerão aqui assim que você adicionar o primeiro." onAdd={()=>openCreate(key)} cta={`Adicionar ${config[key].singular}`}/>;
  const pageTitle=NAV.find(x=>x.id===page)?.label||'Visão geral';
- const exportData=()=>{const blob=new Blob([JSON.stringify(store,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`eixo-backup-${today()}.json`;a.click();URL.revokeObjectURL(url);setToast('Backup exportado.')};
+ const exportData=()=>{const blob=new Blob([JSON.stringify(store,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`eixo-backup-${today()}.json`;a.click();window.setTimeout(()=>URL.revokeObjectURL(url),3000);setToast('Backup exportado.')};
  const readImport=async(e:ChangeEvent<HTMLInputElement>)=>{const file=e.target.files?.[0];if(!file)return;try{if(file.size>10_000_000)throw Error('O arquivo excede 10 MB.');const next=JSON.parse(await file.text());if(!validImport(next))throw Error('Arquivo de backup inválido.');if(!window.confirm('Substituir todos os dados atuais pelos dados deste backup?'))return;if(isCloud()&&JSON.stringify(parseERP(next.erp))!==JSON.stringify(parseERP(store.erp))){throw Error('Por segurança, o histórico de estoque, vendas e pagamentos não pode ser substituído diretamente por um arquivo. Seu backup foi preservado. A restauração do ERP exige um procedimento autenticado de migração.')}const state=emptyStore();for(const g of groups)state.collections[g]=next.collections[g];setStore({...state,...next,collections:state.collections,preferences:{...state.preferences,...next.preferences},erp:parseERP(next.erp),training:parseTraining(next.training),nutrition:parseNutrition(next.nutrition),study:parseStudy(next.study)});setToast('Backup restaurado.')}catch(err){setToast(err instanceof Error?err.message:'Erro ao importar arquivo.')}finally{e.target.value=''}};
- const mainSearch=search.trim().toLowerCase();
- const results=groups.filter(g=>can(linked[g]||'dashboard')).flatMap(g=>all(g).map(x=>({kind:g,item:x}))).filter(x=>x.item.title.toLowerCase().includes(mainSearch)||String(x.item.category||'').toLowerCase().includes(mainSearch)).slice(0,12);
+ const mainSearch=normalizeSearch(search);
+ const results=searchWorkspaceRecords(store.collections,groups.filter(g=>can(linked[g]||'dashboard')),activeWorkspace,mainSearch);
+ const quickActions:[string,Page,Collection|null][]=[
+  ['Visão geral','dashboard',null],['Financeiro','financeiro',null],['Agenda e tarefas','agenda',null],
+  ['Estudos','estudos',null],['Academia e saúde','academia',null],['Alimentação','alimentacao',null],
+  ['Negócios e PDV','negocios',null],['Projetos','projetos',null],['Hábitos','habitos',null],
+  ['Configurações','configuracoes',null],['Nova tarefa','agenda','tasks'],
+  ['Novo compromisso','agenda','events'],['Nova receita ou despesa','financeiro','transactions'],
+  ['Novo cliente','negocios','clients'],['Nova empresa','negocios','businesses'],
+  ['Novo projeto','projetos','projects'],['Nova meta','projetos','goals']
+ ];
+ const paletteActions=quickActions.filter(([,target])=>can(target)).filter(([label])=>!mainSearch||normalizeSearch(label).includes(mainSearch)).slice(0,7);
+ const runPaletteAction=(target:Page,kind:Collection|null)=>{setSearchOpen(false);setSearch('');setPage(target);if(kind)openCreate(kind)};
  const workspaceTitle=workspaceList.find(w=>w.id===activeWorkspace)?.title||'Meu espaço pessoal';
  return <div className="shell">
   {navOpen&&<button className="mobile-overlay" onClick={()=>setNavOpen(false)} aria-label="Fechar menu"/>}
@@ -148,7 +193,7 @@ export default function App(){
    <div className="sidebar-bottom"><button className="shortcut" onClick={()=>{setNavOpen(false);setSearchOpen(true)}}><Search size={16}/><span>Busca rápida</span><kbd>Ctrl K</kbd></button><button className="sidebar-profile" onClick={()=>{setNavOpen(false);openAccount()}}><Avatar name={displayName} src={account?.avatarUrl}/><span className="profile-copy"><strong>{displayName}</strong><small>{account?.email||'Conta local'}</small></span><ChevronRight size={16}/></button><div className="sidebar-account-actions"><button onClick={()=>{setNavOpen(false);openPlans()}}><CreditCard size={15}/> Assinatura</button><button onClick={()=>{setNavOpen(false);logout()}}>Sair <ArrowRight size={15}/></button></div></div>
   </aside>
   <div className="main-wrap">
-   <header ref={topbarRef} className="topbar"><div className="top-left"><button className="icon-button mobile-menu" onClick={()=>setNavOpen(true)} aria-label="Abrir menu" aria-controls="main-navigation" aria-expanded={navOpen}><Menu size={21}/></button><span className="crumb-root">{workspaceTitle}</span><ChevronRight size={14} className="crumb-divider"/><span className="crumb-current">{pageTitle}</span></div><div className="top-right"><span className="saved-indicator"><span/>Dados vinculados à sua conta</span><button className="icon-button" onClick={()=>setSearchOpen(true)} title="Pesquisar"><Search size={19}/></button><button className="icon-button" onClick={()=>editPrefs({theme:store.preferences.theme==='light'?'dark':'light'})} title="Alternar tema">{store.preferences.theme==='light'?<Moon size={19}/>:<Sun size={19}/>}</button><button className="profile-circle" aria-label="Minha conta" onClick={openAccount}><Avatar name={displayName} src={account?.avatarUrl}/></button></div></header>
+   <header ref={topbarRef} className="topbar"><div className="top-left"><button className="icon-button mobile-menu" onClick={()=>setNavOpen(true)} aria-label="Abrir menu" aria-controls="main-navigation" aria-expanded={navOpen}><Menu size={21}/></button><span className="crumb-root">{workspaceTitle}</span><ChevronRight size={14} className="crumb-divider"/><span className="crumb-current">{pageTitle}</span></div><div className="top-right"><span className="saved-indicator" data-status={storageWarning?'error':!isOnline||!backendReachable?'offline':syncPending?'pending':'saved'} title={storageWarning?'Falha ao salvar no armazenamento do navegador. Exporte um backup.':!isOnline?'Sem acesso à internet.':!backendReachable?'O servidor EIXO não respondeu à verificação de saúde.':syncPending?'Alterações aguardando sincronização.':'Nenhuma alteração pendente.'}><span/>{storageWarning?'Falha no salvamento':!isOnline?'Sem conexão':!backendReachable?'Servidor indisponível':syncPending?'Salvando alterações…':'Dados sincronizados'}</span><button className="icon-button" onClick={()=>setSearchOpen(true)} title="Pesquisar"><Search size={19}/></button><button className="icon-button" onClick={()=>editPrefs({theme:store.preferences.theme==='light'?'dark':'light'})} title="Alternar tema">{store.preferences.theme==='light'?<Moon size={19}/>:<Sun size={19}/>}</button><button className="profile-circle" aria-label="Minha conta" onClick={openAccount}><Avatar name={displayName} src={account?.avatarUrl}/></button></div></header>
    <main className="content" key={page}>
    {store.demo&&<div className="demo-banner"><Sparkles size={16}/> Demonstração completa ativa. Explore todos os módulos no espaço Horizonte • Demonstração. Os dados são fictícios. <button disabled={demoBusy} onClick={()=>void changeDemo(false)}>{demoBusy?'Aguarde…':'Limpar demonstração'} <ArrowRight size={14}/></button></div>}
    {page==='dashboard'&&<>
@@ -161,6 +206,7 @@ export default function App(){
       {can('academia')&&<article className="metric" data-tone={thisWeekTraining>=store.preferences.weeklyTrainingGoal?'positive':'info'}><div className="metric-title">Treinos nesta semana <Dumbbell size={19}/></div><div className="metric-value">{thisWeekTraining}<span className="metric-unit">/ {store.preferences.weeklyTrainingGoal}</span></div><div className="metric-foot metric-progress"><Progress value={100*thisWeekTraining/Math.max(1,store.preferences.weeklyTrainingGoal)} color="blue"/></div></article>}
       {can('estudos')&&<article className="metric" data-tone={'info'}><div className="metric-title">Tempo de estudo <BookOpen size={19}/></div><div className="metric-value">{formatMinutes(studiedMinutes)}</div><div className="metric-foot"><span className="muted">total registrado</span></div></article>}
     </div>
+     {(can('agenda')||can('negocios'))&&<Panel title="Central de atenção" subtitle="O que precisa da sua atenção agora" className="eixo-attention-panel"><div className="eixo-attention-grid">{actionNotices.length?actionNotices.map(notice=><button key={notice.id} className="eixo-attention-item" data-tone={notice.tone} onClick={()=>setPage(notice.page)}><span className="eixo-attention-count">{notice.count}</span><span><strong>{notice.title}</strong><small>{notice.description}</small></span><ArrowUpRight size={16}/></button>):<div className="eixo-attention-clear"><CheckCheck size={19}/><span>Tudo em dia neste espaço. Continue acompanhando suas atividades.</span></div>}</div></Panel>}
      {can('academia')&&<Suspense fallback={<div className="module-skeleton" role="status">Preparando mapa muscular...</div>}><TrainingStudio key={activeWorkspace} store={store} setStore={setStore} workspaceId={activeWorkspace} legacy={workouts} compact onOpen={()=>setPage('academia')}/></Suspense>}
     <div className="dashboard-grid">{can('financeiro')&&<Panel title="Fluxo financeiro" subtitle="Receitas e despesas dos últimos 6 meses" action={<button className="text-action" onClick={()=>setPage('financeiro')}>Ver financeiro <ArrowRight size={15}/></button>}><div className="chart-space">{tx.length?<ResponsiveContainer width="100%" height="100%"><BarChart data={monthFlow} barGap={6}><CartesianGrid vertical={false} stroke="var(--line)" strokeDasharray="3 4"/><XAxis dataKey="month" tickLine={false} axisLine={false} tick={{fill:'var(--text-muted)',fontSize:12}}/><YAxis hide/><Tooltip formatter={(v)=>formatMoney(Number(v))} contentStyle={{border:'1px solid var(--border)',borderRadius:12,background:'var(--surface)',color:'var(--text)',fontSize:12}}/><Bar dataKey="Receitas" fill="var(--success)" radius={[4,4,0,0]} maxBarSize={21}/><Bar dataKey="Despesas" fill="var(--danger)" radius={[4,4,0,0]} maxBarSize={21}/></BarChart></ResponsiveContainer>:<Empty icon={BarChart3} title="Seu histórico financeiro" body="Registre receitas e despesas para visualizar a evolução." onAdd={()=>openCreate('transactions')} cta="Adicionar lançamento"/>}</div><div className="chart-legend"><span><i className="legend-dot dark"/>Receitas</span><span><i className="legend-dot pale"/>Despesas</span></div></Panel>}
      {can('agenda')&&<Panel title="Próximos compromissos" subtitle="Sua agenda nos próximos dias" action={<button className="text-action" onClick={()=>setPage('agenda')}>Ver agenda <ArrowRight size={15}/></button>}><div className="dashboard-list">{futureEvents.length?futureEvents.slice(0,5).map(x=><button className="timeline-item" key={x.id} onClick={()=>openEdit('events',x)}><div className="timeline-date"><b>{String(x.date).slice(8,10)}</b><small>{new Date(String(x.date)+'T12:00:00').toLocaleDateString('pt-BR',{month:'short'}).replace('.','')}</small></div><div className="timeline-copy"><strong>{x.title}</strong><span>{x.category||'Compromisso'} {x.time?'· '+x.time:''}</span></div><ArrowUpRight size={16}/></button>):<Empty icon={CalendarDays} title="Agenda livre" body="Adicione compromissos para organizar sua rotina." onAdd={()=>openCreate('events')} cta="Novo compromisso"/>}</div></Panel>}
@@ -199,12 +245,21 @@ export default function App(){
     <Panel title="Dados e privacidade" subtitle="Dados vinculados à sua conta"><div className="privacy-line"><IconTile variant="softblue"><ShieldCheck size={19}/></IconTile><div><strong>Sincronização da conta</strong><p>Esta versão salva dados em um servidor local por conta de usuário, com sincronização após mudanças. Ainda não é hospedagem de produção com HTTPS ou infraestrutura de backups automáticos. Faça cópias de segurança regularmente.</p></div></div><div className="settings-buttons"><button className="btn light" onClick={exportData}><Download size={16}/> Exportar backup JSON</button><button className="btn light" onClick={()=>importRef.current?.click()}><FileUp size={16}/> Importar backup JSON</button><input ref={importRef} onChange={readImport} accept=".json,application/json" type="file" hidden/></div></Panel>
     <Panel title="Demonstração" subtitle="Explore todos os módulos com exemplos completos"><p className="settings-text">Preencha agenda, finanças, estudos, treinos, alimentação, projetos e hábitos. A empresa de exemplo inclui clientes, produtos, vendas, compras, estoque, contas e relatórios. Todos os módulos serão ativados no espaço Horizonte • Demonstração. Essa operação substitui seus dados atuais; exporte um backup antes de continuar.</p><button className="btn light" disabled={demoBusy} onClick={()=>void changeDemo(true)}><Sparkles size={16}/> {demoBusy?'Preparando demonstração…':'Carregar demonstração'}</button></Panel>
     <Panel title="Limpar armazenamento" subtitle="Apagar os registros deste navegador"><p className="settings-text">Essa operação exclui os dados locais do EIXO e não pode ser desfeita sem um backup.</p><button className="btn destructive" onClick={()=>{if(window.confirm('Excluir TODOS os dados locais do EIXO?')&&window.confirm('Última confirmação: apagar todos os registros?')){setStore(emptyStore());setToast('Todos os registros foram removidos.');setPage('dashboard')}}}><Trash2 size={16}/> Excluir todos os dados</button></Panel></div>
-    <div className="version-info">EIXO OS · Versão 0.3.0 · Primeira versão local · Desenvolvido com atenção aos detalhes.</div>
+    <div className="version-info">EIXO OS · Versão 0.4.0 · Busca inteligente, central de atenção e sincronização visível.</div>
    </>}
    </main>
   </div>
   {toast&&<div className="toast" role="status"><Check size={17}/>{toast}<button onClick={()=>setToast('')} aria-label="Fechar"><X size={14}/></button></div>}
-  {searchOpen&&<div className="overlay" onMouseDown={e=>{if(e.target===e.currentTarget)setSearchOpen(false)}}><div className="search-dialog" role="dialog" aria-modal="true" aria-label="Busca universal"><div className="search-field"><Search size={21}/><input autoFocus value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar nos seus módulos ativos..." /><kbd>ESC</kbd></div><div className="search-results">{mainSearch?results.length?results.map(({kind,item})=><button key={kind+item.id} onClick={()=>{setSearchOpen(false);setPage(linked[kind]||'dashboard');openEdit(kind,item);setSearch('')}}><IconTile variant="softblue"><Search size={15}/></IconTile><span><strong>{item.title}</strong><small>{config[kind].plural}</small></span><ArrowUpRight size={16}/></button>):<div className="search-tip">Nenhum resultado encontrado.</div>:<div className="search-tip"><Command size={17}/> Busque por um nome, descrição ou categoria.</div>}</div><div className="dialog-footer"><span>Busca nos módulos ativos</span><span>ESC para fechar</span></div></div></div>}
+  {searchOpen&&<div className="overlay" onMouseDown={e=>{if(e.target===e.currentTarget)setSearchOpen(false)}}><div className="search-dialog" role="dialog" aria-modal="true" aria-label="Busca e ações rápidas">
+   <div className="search-field"><Search size={21}/><input autoFocus value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar ou acessar um módulo..." aria-label="Buscar registros e ações" onKeyDown={e=>{if(e.key==='Enter'&&paletteActions.length){e.preventDefault();runPaletteAction(paletteActions[0][1],paletteActions[0][2])}}}/><button className="search-close" type="button" onClick={()=>{setSearchOpen(false);setSearch('')}} aria-label="Fechar busca"><X size={17}/></button><kbd>ESC</kbd></div>
+   <div className="search-results">
+    {paletteActions.length>0&&<div className="palette-section"><p className="palette-heading">AÇÕES RÁPIDAS</p>{paletteActions.map(([label,target,kind])=><button key={label} onClick={()=>runPaletteAction(target,kind)}><IconTile variant="softblue">{kind?<Plus size={15}/>:<ArrowRight size={15}/>}</IconTile><span><strong>{label}</strong><small>{kind?'Criar registro':'Abrir módulo'}</small></span><ArrowUpRight size={16}/></button>)}</div>}
+    {mainSearch&&<div className="palette-section"><p className="palette-heading">REGISTROS NESTE ESPAÇO</p>{results.length?results.map(({kind,item})=><button key={kind+item.id} onClick={()=>{setSearchOpen(false);setPage(linked[kind]||'dashboard');openEdit(kind,item);setSearch('')}}><IconTile variant="softblue"><Search size={15}/></IconTile><span><strong>{item.title}</strong><small>{config[kind].plural}</small></span><ArrowUpRight size={16}/></button>):<div className="search-tip">Nenhum registro encontrado neste espaço.</div>}</div>}
+    {!mainSearch&&<div className="search-tip small-tip"><Command size={17}/> Pesquise por nome, categoria ou use os atalhos acima.</div>}
+    {mainSearch&&!paletteActions.length&&!results.length&&<div className="search-tip">Tente outro termo de pesquisa.</div>}
+   </div>
+   <div className="dialog-footer"><span>Resultados isolados por espaço · Ctrl K</span><span>ESC para fechar</span></div>
+  </div></div>}
   {modal&&<div className="overlay" onMouseDown={e=>{if(e.target===e.currentTarget)setModal(null)}}><div className="edit-dialog" role="dialog" aria-modal="true" aria-label={modal.item?'Editar registro':'Criar registro'}><header className="dialog-head"><div><span className="eyebrow">{modal.item?'EDITAR REGISTRO':'NOVO REGISTRO'}</span><h2>{modal.item?'Editar ': 'Adicionar '}{config[modal.kind].singular}</h2><p>{config[modal.kind].description}</p></div><button className="icon-button" onClick={()=>setModal(null)} aria-label="Fechar"><X size={20}/></button></header><form onSubmit={save}><div className="dialog-fields">{modal.kind==='businesses'&&<ImageUpload name={form.title||'Empresa'} imageId={form.logoId} workspaceId={modal.item?.id||activeWorkspace} onChange={id=>setForm(f=>({...f,logoId:id}))} onBusy={setBusinessUpload} onError={setToast}/>} {config[modal.kind].fields.map(field=><label key={field.key} className={field.kind==='textarea'?'wide':''}><span>{field.label}{field.required&&<em> *</em>}</span>{field.kind==='select'?<select value={form[field.key]||''} onChange={e=>setForm(v=>({...v,[field.key]:e.target.value}))} required={field.required}><option value="">Selecione...</option>{field.options?.map(o=><option key={o} value={o}>{o}</option>)}</select>:field.kind==='textarea'?<textarea rows={3} value={form[field.key]||''} onChange={e=>setForm(v=>({...v,[field.key]:e.target.value}))} placeholder="Informações adicionais (opcional)"/>:<input required={field.required} type={field.key==='email'?'email':['phone','whatsapp'].includes(field.key)?'tel':field.kind||'text'} inputMode={field.kind==='number'?'decimal':undefined} step={field.kind==='number'?'any':undefined} min={field.kind==='number'?'0':undefined} value={form[field.key]||''} placeholder={field.placeholder||''} onChange={e=>setForm(v=>({...v,[field.key]:e.target.value}))}/>}</label>)}</div><footer className="form-footer"><button type="button" className="btn light" onClick={()=>setModal(null)}>Cancelar</button><button type="submit" disabled={businessUpload} className="btn primary"><Check size={16}/>{modal.item?'Salvar alterações':'Adicionar registro'}</button></footer></form></div></div>}
  </div>
 }

@@ -8,6 +8,7 @@ import './erp.css';
 import './design-system.css';
 import './visual-polish.css';
 import './indicators.css';
+import './upgrade.css';
 import DialogAccessibility from './DialogAccessibility';
 createRoot(document.getElementById('root')!).render(<React.StrictMode><AuthGate><React.Suspense fallback={<AppLoading/>}><App /></React.Suspense></AuthGate><DialogAccessibility/></React.StrictMode>);
 if (import.meta.env.PROD && 'serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
