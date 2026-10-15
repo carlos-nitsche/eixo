@@ -31,6 +31,9 @@ self.onmessage=async(event:MessageEvent<Request>)=>{
   self.postMessage({type:'error',id,message:'Áudio inválido para o Whisper.'});return;
  }
  try{
+  // Probe WebAssembly inside the exact worker security context before loading model weights.
+  try{await WebAssembly.compile(new Uint8Array([0,97,115,109,1,0,0,0]));}
+  catch(error){throw new Error('WebAssembly bloqueado pela política de segurança do navegador. Feche o EIXO, abra novamente e atualize a página. Detalhes: '+String(error))}
   self.postMessage({type:'status',id,message:'Carregando modelo de voz local...'});
   const model=await getTranscriber();
   self.postMessage({type:'status',id,message:'Reconhecendo português neste dispositivo...'});

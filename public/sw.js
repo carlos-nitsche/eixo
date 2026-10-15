@@ -1,7 +1,7 @@
-// EIXO OS — service worker v0.4: bounded static assets only; never caches accounts, API or documents.
-const CACHE='eixo-static-v5',LIMIT=110;
+// EIXO OS — service worker v0.9.2: purge older script policies; never cache voice workers, accounts or APIs.
+const CACHE='eixo-static-v6',LIMIT=110;
 const INITIAL=['/favicon.svg','/manifest.webmanifest'];
-const staticAsset=pathname=>pathname==='/favicon.svg'||pathname==='/manifest.webmanifest'||/^\/(assets|brand|icons)\//.test(pathname);
+const staticAsset=pathname=>pathname==='/favicon.svg'||pathname==='/manifest.webmanifest'||(/^\/(assets|brand|icons)\//.test(pathname)&&!/^\/assets\/whisper-local\.worker-[^/]+\.js$/.test(pathname));
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(INITIAL)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith('eixo-')&&key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',event=>{

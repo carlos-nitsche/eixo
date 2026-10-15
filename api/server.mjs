@@ -405,7 +405,7 @@ async function staticFile(req,res,url){
  if(!file.startsWith(root+path.sep)&&file!==root)return fail(res,403,'Acesso negado.');
  if(!fs.existsSync(file)||fs.statSync(file).isDirectory())file=path.join(root,'index.html');
  const ext=path.extname(file),type=mime[ext]||'application/octet-stream';
- res.writeHead(200,{'Content-Type':type,'X-Content-Type-Options':'nosniff','Referrer-Policy':'strict-origin-when-cross-origin','Cache-Control':ext==='.html'?'no-store':'public, max-age=3600'});
+ res.writeHead(200,{'Content-Type':type,'X-Content-Type-Options':'nosniff','Referrer-Policy':'strict-origin-when-cross-origin','Cache-Control':ext==='.html'||pathname==='/sw.js'||/^\/assets\/whisper-local\.worker-[^/]+\.js$/.test(pathname)||pathname.startsWith('/whisper-wasm/')?'no-store':'public, max-age=3600'});
  if(req.method==='HEAD')return res.end();fs.createReadStream(file).pipe(res);
 }
 await initDb();
