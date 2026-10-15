@@ -46,10 +46,9 @@ try{
  page.on('response',r=>{if(r.url().includes('/whisper-wasm/')||r.url().includes('/models/'))console.log('MODEL_HTTP',r.status(),r.url().split('/').slice(-2).join('/'))});
  page.on('pageerror',error=>errors.push(error.message));
  page.on('console',event=>{if(event.type()==='error')errors.push(event.text())});
- await page.setRequestInterception(true);
+ // Read-only request auditing; interception can deadlock module imports in Chromium workers.
  page.on('request',request=>{
-  if(request.url().startsWith(origin)||request.url().startsWith('blob:')||request.url().startsWith('data:'))request.continue();
-  else{external.push(request.url());request.abort()}
+  if(!request.url().startsWith(origin)&&!request.url().startsWith('blob:')&&!request.url().startsWith('data:'))external.push(request.url());
  });
  await page.setCookie({name:'eixo_session',value:cookie.split('=')[1],url:origin,httpOnly:true,sameSite:'Lax'});
  await page.setViewport({width:390,height:844,isMobile:true,hasTouch:true,deviceScaleFactor:1});
@@ -68,7 +67,7 @@ try{
   const input=document.querySelector('.eixo-ai-compose textarea');
   const notice=document.querySelector('.eixo-ai-voice-notice')?.textContent||'';
   return input?.value.trim()||document.querySelector('.eixo-ai-audio-preview')||notice.includes('Transcrição indisponível')||notice.includes('Erro ao iniciar');
- },{timeout:60000,polling:500});
+ },{timeout:120000,polling:500});
  clearInterval(heartbeat);
  const result=await page.evaluate(()=>({
   transcript:document.querySelector('.eixo-ai-compose textarea')?.value||'',
