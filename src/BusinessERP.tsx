@@ -184,17 +184,21 @@ export default function BusinessERP({store,setStore,workspaceId,workspaceTitle,c
  const saveAdjustment=(event:FormEvent)=>{event.preventDefault();const delta=Number(form.delta);if(!Number.isFinite(delta)||delta===0){notify('Informe ajuste positivo ou negativo.');return}if(isCloud()){void serverAction('stock.adjust',{id:editingId,delta,reason:form.reason||'Ajuste manual'},'Estoque ajustado pelo servidor.',()=>close());return}const result=adjustStock(data,editingId,delta,form.reason||'Ajuste manual');if(!result.ok){notify(result.message);return}modify(()=>result.data);close();notify('Estoque ajustado e movimentação registrada.')};
  const savePayment=(event:FormEvent)=>{event.preventDefault();if(!payTarget)return;const amount=round(n(form.amount));const record=payTarget.kind==='order'?orders.find(x=>x.id===payTarget.id):bills.find(x=>x.id===payTarget.id);if(!record||amount<=0||amount>openAmount(record)+.001){notify('Valor deve ser maior que zero e não superar o saldo pendente.');return}if(isCloud()){void serverAction('payment.record',{id:payTarget.id,sourceType:payTarget.kind,amount,date:form.date||erpDate()},'Pagamento registrado pelo servidor.',()=>close());return}const payment={id:erpId(),workspaceId,date:form.date||erpDate(),createdAt:new Date().toISOString(),sourceType:payTarget.kind,sourceId:payTarget.id,description:'lines'in record?record.number+' · '+record.partnerName:record.title,direction:('lines'in record?record.kind==='Compra':record.type==='Pagar')?'Saída' as const:'Entrada' as const,amount};if(payTarget.kind==='order')modify(e=>({...e,orders:e.orders.map(x=>x.id===payTarget.id?{...x,paid:round(x.paid+amount),installments:x.installments?allocateInstallmentPayment(x.installments,amount):undefined}:x),payments:[...e.payments,payment]}));else modify(e=>({...e,bills:e.bills.map(x=>x.id===payTarget.id?{...x,paid:round(x.paid+amount)}:x),payments:[...e.payments,payment]}));close();notify('Pagamento registrado.')};
  const makeReceipt=(doc:ERPOrder)=>createReceiptModel(doc,businesses.find(b=>b.id===workspaceId)||null,clients.find(c=>c.id===doc.partnerId)||null,workspaceTitle);
+ const receiptPaper=():58|80=>{try{return localStorage.getItem('eixo-receipt-roll-width')==='58'?58:80}catch{return 80}};
  const printOrder=(doc:ERPOrder)=>{
   if(doc.kind!=='Venda'){printLegacyOrder(doc);return}
   try{
    const page=window.open('','_blank','width=540,height=860');
    if(!page){notify('Permita pop-ups para visualizar o comprovante.');return}
    page.document.open();
-   page.document.write(receiptHTML(makeReceipt(doc),80));
+   page.document.write(receiptHTML(makeReceipt(doc),receiptPaper()));
    page.document.close();
    const receipt=page.document.getElementById('receipt');
+   let selectedPaper=receiptPaper();
    const chooseSize=(width:58|80)=>{
     if(!receipt)return;
+    selectedPaper=width;
+    try{localStorage.setItem('eixo-receipt-roll-width',String(width))}catch{}
     receipt.dataset.size=String(width);
     receipt.style.setProperty('--paper',width+'mm');
     page.document.getElementById('p58')?.classList.toggle('active',width===58);
@@ -202,16 +206,17 @@ export default function BusinessERP({store,setStore,workspaceId,workspaceTitle,c
    };
    page.document.getElementById('p58')?.addEventListener('click',()=>chooseSize(58));
    page.document.getElementById('p80')?.addEventListener('click',()=>chooseSize(80));
-   page.document.getElementById('print')?.addEventListener('click',()=>page.print());
-   chooseSize(80);
+   page.document.getElementById('print')?.addEventListener('click',()=>{page.focus();page.print()});
+   page.document.getElementById('pdf')?.addEventListener('click',()=>{void downloadOrderReceipt(doc,selectedPaper)});
+   chooseSize(selectedPaper);
    page.focus();
   }catch(error){notify(error instanceof Error?error.message:'Não foi possível abrir o comprovante.')}
  };
- const downloadOrderReceipt=async(doc:ERPOrder)=>{
+ const downloadOrderReceipt=async(doc:ERPOrder,width:58|80=receiptPaper())=>{
   try{
    if(doc.kind!=='Venda')throw Error('PDF de comprovante disponível apenas para vendas.');
    const {downloadSalesReceiptPDF}=await import('./receipt-pdf');
-   await downloadSalesReceiptPDF(makeReceipt(doc),80);
+   await downloadSalesReceiptPDF(makeReceipt(doc),width);
   }catch(error){notify(error instanceof Error?error.message:'Não foi possível gerar o PDF.')}
  };
  const printLegacyOrder=(doc:ERPOrder)=>{const win=window.open('','_blank','width=900,height=720');if(!win){notify('Permita pop-ups para imprimir.');return}const html=`<!doctype html><html lang="pt-BR"><meta charset="utf-8"/><title>${esc(doc.number)}</title><style>body{font:14px Arial;color:#222;max-width:850px;margin:50px auto}header{display:flex;justify-content:space-between;border-bottom:2px solid #333;padding-bottom:22px}h1{margin:0}table{width:100%;border-collapse:collapse;margin-top:28px}td,th{padding:12px;border-bottom:1px solid #ddd;text-align:left}th{background:#f4f4f4}.total{text-align:right;margin-top:28px;font-size:22px}footer{margin-top:55px;font-size:12px;color:#777}</style><header><div>${businesses.find(b=>b.id===workspaceId)?.logoId?`<img alt="Logo da empresa" style="width:64px;height:64px;object-fit:contain" src="/api/media/${encodeURIComponent(String(businesses.find(b=>b.id===workspaceId)?.logoId))}"/>`:''}<h1>${esc(workspaceTitle)}</h1><p>Documento comercial interno</p></div><div><strong>${esc(doc.kind)} ${esc(doc.number)}</strong><p>${esc(dateShort(doc.date))}</p></div></header><p><b>Cliente / fornecedor:</b> ${esc(doc.partnerName)}</p><p><b>Status:</b> ${esc(doc.status)}</p><table><tr><th>Produto</th><th>Qtd.</th><th>Unit.</th><th>Total</th></tr>${doc.lines.map(l=>`<tr><td>${esc(l.title)}</td><td>${esc(l.quantity)} ${esc(l.unit)}</td><td>${esc(money(l.price))}</td><td>${esc(money(lineTotal(l)))}</td></tr>`).join('')}</table><p class="total">Total: <b>${esc(money(orderTotal(doc)))}</b></p><p>Valor pago: ${esc(money(doc.paid))} | Em aberto: ${esc(money(openAmount(doc)))}</p><p>Observações: ${esc(doc.notes)}</p><footer>Documento interno para controle comercial. NÃO É NOTA FISCAL, NF-e, NFC-e ou documento fiscal.</footer></html>`;win.document.write(html);win.document.close();win.focus();setTimeout(()=>win.print(),250)};

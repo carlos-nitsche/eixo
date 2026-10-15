@@ -3,9 +3,9 @@ import type {ReceiptModel,ReceiptWidth} from './sales-receipt';
 const currency=(v:number)=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(v);
 const amount=(v:number)=>new Intl.NumberFormat('pt-BR',{maximumFractionDigits:3}).format(v);
 const textSafe=(v:string)=>String(v||'').replace(/[^\x20-\x7e\u00a0-\u00ff]/g,' ').trim();
-export function makeSalesReceiptPDF(model:ReceiptModel,strip:ReceiptWidth=80,logoData?:string|null):jsPDF{
- const W=strip,margin=strip===58?3:5,right=W-margin,maxY=276;
- const pdf=new jsPDF({orientation:'portrait',unit:'mm',format:[strip,297],compress:true});
+function renderReceiptPDF(model:ReceiptModel,strip:ReceiptWidth,logoData:string|null|undefined,pageHeight:number):{pdf:jsPDF;usedHeight:number}{
+ const W=strip,margin=strip===58?3:5,right=W-margin,maxY=pageHeight-12;
+ const pdf=new jsPDF({orientation:'portrait',unit:'mm',format:[strip,pageHeight],compress:true});
  const center=W/2;let y=7;
  const ink:[number,number,number]=[25,33,44],light:[number,number,number]=[94,103,116];
  const tx=(content:string,x:number,lineY:number,size=8,bold=false,align:'left'|'right'|'center'='left',color=ink)=>{
@@ -14,7 +14,7 @@ export function makeSalesReceiptPDF(model:ReceiptModel,strip:ReceiptWidth=80,log
  };
  const divider=()=>{pdf.setDrawColor(175,184,195);pdf.setLineDashPattern([1,1.5],0);pdf.line(margin,y,right,y);pdf.setLineDashPattern([],0);y+=5};
  const page=()=>{
-  pdf.addPage([strip,297],'portrait');y=10;
+  pdf.addPage([strip,pageHeight],'portrait');y=10;
   tx('EIXO · CONTINUAÇÃO',center,y,8,true,'center');y+=7;
   tx('Venda '+model.number,center,y,8,true,'center');y+=8;divider();
  };
@@ -26,23 +26,27 @@ export function makeSalesReceiptPDF(model:ReceiptModel,strip:ReceiptWidth=80,log
  };
  const pair=(name:string,value:string)=>{
   pdf.setFontSize(8);pdf.setFont('helvetica','normal');
-  const labelMax=strip===58?18:27;const label=textSafe(name).slice(0,labelMax);
-  const v=pdf.splitTextToSize(textSafe(value),strip===58?24:37);
-  space(Math.max(1,v.length)*4.4+1);
-  tx(label,margin,y,8);for(const [i,line] of v.entries())tx(line,right,y+i*4.4,8,true,'right');
-  y+=Math.max(1,v.length)*4.4+1.5;
+  const labelLines=pdf.splitTextToSize(textSafe(name),strip===58?21:31);
+  const valueLines=pdf.splitTextToSize(textSafe(value),strip===58?24:33);
+  const rows=Math.max(labelLines.length,valueLines.length,1);
+  space(rows*4.4+2);
+  for(const [i,line] of labelLines.entries())tx(line,margin,y+i*4.4,8);
+  for(const [i,line] of valueLines.entries())tx(line,right,y+i*4.4,8,true,'right');
+  y+=rows*4.4+1.5;
  };
  const section=(name:string)=>{space(14);divider();tx(name,center,y,8,true,'center');y+=8};
  const date=[model.date,model.time].filter(Boolean).join(' · ');
  if(logoData?.startsWith('data:image/png;base64,')){pdf.addImage(logoData,'PNG',center-8,y,16,16);y+=20}
  tx('EIXO · COMPROVANTE NÃO FISCAL',center,y,7,true,'center');y+=8;
  multiline(model.issuerName,12,true);y+=1;
+ if(model.issuerTradeName&&model.issuerTradeName!==model.issuerName)multiline(model.issuerTradeName,8,true);
  if(model.issuerDocument)multiline('CPF/CNPJ: '+model.issuerDocument,7);
  if(model.issuerAddress)multiline(model.issuerAddress,7);
  if(model.issuerContact)multiline(model.issuerContact,7);
  section(model.status==='Confirmada'?'COMPROVANTE DE VENDA':'VENDA '+model.status.toUpperCase());
  tx('Nº '+model.number,center,y,10,true,'center');y+=6;
- tx(date,center,y,7,false,'center',light);y+=7;
+ tx(date,center,y,7,false,'center',light);y+=6;
+ tx('Controle interno: '+model.reference,center,y,7,false,'center',light);y+=7;
  pair('Situação',model.status);
  section('CLIENTE');
  multiline(model.customerName,9,true);
@@ -68,16 +72,22 @@ export function makeSalesReceiptPDF(model:ReceiptModel,strip:ReceiptWidth=80,log
   for(const i of model.installments)pair(i.label+' · '+i.due,currency(i.amount));
  }
  if(model.notes){section('OBSERVAÇÕES');multiline(model.notes,7)}
- space(33);divider();tx('COMPROVANTE NÃO FISCAL',center,y,8,true,'center');y+=5;
+ space(27);divider();tx('COMPROVANTE NÃO FISCAL',center,y,8,true,'center');y+=5;
  multiline('Não substitui NFC-e, NF-e ou nota fiscal.',7);y+=5;
  tx('Obrigado pela preferência!',center,y,8,true,'center');y+=4;
  const pages=pdf.getNumberOfPages();
  for(let p=1;p<=pages;p++){
-  pdf.setPage(p);pdf.setDrawColor(208,214,224);pdf.line(margin,285,right,285);
-  tx('EIXO · Controle comercial · '+p+'/'+pages,center,290,6,false,'center',light);
+  pdf.setPage(p);pdf.setDrawColor(208,214,224);pdf.line(margin,pageHeight-10,right,pageHeight-10);
+  tx('EIXO · Controle comercial · '+p+'/'+pages,center,pageHeight-6,6,false,'center',light);
  }
  pdf.setProperties({title:'EIXO · Comprovante de venda '+model.number,author:'EIXO',subject:'Comprovante de venda não fiscal'});
- return pdf;
+ return {pdf,usedHeight:y};
+}
+export function makeSalesReceiptPDF(model:ReceiptModel,strip:ReceiptWidth=80,logoData?:string|null):jsPDF{
+ const base=renderReceiptPDF(model,strip,logoData,297);
+ if(base.pdf.getNumberOfPages()>1)return base.pdf;
+ const fittedHeight=Math.max(92,Math.min(297,Math.ceil(base.usedHeight+28)));
+ return fittedHeight<297?renderReceiptPDF(model,strip,logoData,fittedHeight).pdf:base.pdf;
 }
 async function loadReceiptLogo(id:string):Promise<string|null>{
  if(!/^[a-f0-9-]{36}$/i.test(id))return null;
