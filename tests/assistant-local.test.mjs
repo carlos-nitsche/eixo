@@ -68,3 +68,27 @@ test('unknown text does not produce speculative actions',()=>{
  assert.equal(plan('olá').type,'reply');
  assert.equal(plan('registre uma tarefa').draft.missing.includes('title'),true);
 });
+
+test('existing appointment can be corrected by voice-like text',()=>{
+ const first=plan('Agende consulta amanhã às 14h');
+ const edited=interpretAssistant('muda o horário para às 16h','pessoal',now,first.draft);
+ assert.equal(edited.draft.fields.time,'16:00');
+ const renamed=interpretAssistant('troca a descrição para revisão médica','pessoal',now,edited.draft);
+ assert.equal(renamed.draft.fields.title,'revisão médica');
+});
+test('financial summary uses only the current workspace and requested month',()=>{
+ const records={
+  tasks:[],events:[],
+  transactions:[
+   {id:'a',workspaceId:'pessoal',type:'Receita',amount:1000,date:'2026-10-05'},
+   {id:'b',workspaceId:'pessoal',type:'Despesa',amount:215.55,date:'2026-10-09'},
+   {id:'c',workspaceId:'empresa',type:'Despesa',amount:99999,date:'2026-10-09'},
+   {id:'d',workspaceId:'pessoal',type:'Despesa',amount:3333,date:'2026-09-09'}
+  ]
+ };
+ const result=plan('quanto gastei este mês?','pessoal',records);
+ assert.equal(result.type,'reply');
+ assert(result.reply.includes('R$ 215,55')||result.reply.includes('R$ 215,55'));
+ assert(!result.reply.includes('99.999'));
+ assert(!result.reply.includes('3.333'));
+});

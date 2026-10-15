@@ -34,7 +34,7 @@ try{
  assert.equal((await api('/api/auth/login','POST',{email,password})).status,200);
  const state=emptyDemoState({name:'Assistente QA',enabledModules:['agenda','financeiro','estudos'],onboardingVersion:1});
  assert.equal((await api('/api/state','PUT',{baseVersion:0,state})).status,200);
- browser=await puppeteer.launch({executablePath:'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',headless:true,args:['--no-sandbox','--disable-gpu'],timeout:22000});
+ browser=await puppeteer.launch({executablePath:'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',headless:true,args:['--no-sandbox','--disable-gpu','--use-fake-device-for-media-stream','--use-fake-ui-for-media-stream'],timeout:22000});
  const page=await browser.newPage();
  page.on('pageerror',e=>errors.push(e.message));
  await page.setViewport({width:390,height:844,isMobile:true,hasTouch:true,deviceScaleFactor:1});
@@ -54,7 +54,7 @@ try{
  let before=(await api('/api/state')).data.state;
  assert.equal(before.collections.events.length,0,'draft must not change state without consent');
  await page.click('.eixo-ai-confirm');
- await page.waitForFunction(()=>document.querySelector('.eixo-ai-scroll')?.innerText.includes('Registro adicionado'),{timeout:7000});
+ await page.waitForFunction(()=>document.querySelector('.eixo-ai-scroll')?.innerText.includes('adicionado a'),{timeout:7000});
  const persisted=async(predicate)=>{
   for(let i=0;i<30;i++){
    const data=(await api('/api/state')).data.state;
@@ -73,10 +73,39 @@ try{
  assert.equal(afterExpense.collections.transactions[0].amount,85);
  assert.equal(afterExpense.collections.transactions[0].type,'Despesa');
  await submit('marque reunião');
- await page.waitForFunction(()=>document.querySelector('.eixo-ai-missing')?.innerText.includes('date'),{timeout:9000});
+ await page.waitForFunction(()=>document.querySelector('.eixo-ai-missing')?.innerText.includes('data'),{timeout:9000});
  await submit('amanhã');
  await submit('às 15h');
  await page.waitForFunction(()=>document.querySelector('.eixo-ai-confirm')&&!document.querySelector('.eixo-ai-confirm').disabled,{timeout:9000});
+ await page.click('.eixo-ai-abort');
+ await page.click('.eixo-ai-mic');
+ await wait(1400);
+ await page.waitForSelector('.eixo-ai-audio-active',{timeout:9000});
+ await new Promise(resolve=>setTimeout(resolve,1300));
+ await page.click('.eixo-ai-audio-active button');
+ await page.waitForSelector('.eixo-ai-audio-preview audio',{timeout:12000});
+ const audioProbe=await page.$eval('.eixo-ai-audio-preview audio',element=>({src:element.getAttribute('src'),controls:element.controls}));
+ assert(audioProbe.src.startsWith('blob:'),'voice should be locally recorded as blob URL, never remote');
+ assert.equal(audioProbe.controls,true);
+ await page.click('.eixo-ai-audio-preview button:last-child');
+ await page.waitForFunction(()=>document.querySelector('.eixo-ai-scroll')?.innerText.includes('Mensagem de voz gravada'),{timeout:8000});
+ await page.evaluate(()=>{
+  class MockOfflineSpeechRecognition{
+   static available=async({processLocally})=>processLocally?'available':'unavailable';
+   lang='';processLocally=false;continuous=false;interimResults=false;onresult=null;onend=null;onerror=null;
+   start(){setTimeout(()=>{this.onresult?.({resultIndex:0,results:[[{transcript:'Crie tarefa revisar relatórios amanhã'}]]});this.onend?.()},150)}
+   stop(){this.onend?.()}
+   abort(){this.onend?.()}
+  }
+  window.SpeechRecognition=MockOfflineSpeechRecognition;
+ });
+ await page.click('.eixo-ai-mic');
+ await page.waitForFunction(()=>document.querySelector('.eixo-ai-compose textarea')?.value.includes('revisar relatórios'),{timeout:9000});
+ const voiceText=await page.$eval('.eixo-ai-compose textarea',element=>element.value);
+ assert(voiceText.includes('revisar relatórios'),'on-device speech should populate the composer without sending automatically');
+ await page.click('.eixo-ai-compose button[type="submit"]');
+ await page.waitForSelector('.eixo-ai-draft',{timeout:8000});
+ assert((await page.$eval('.eixo-ai-draft',el=>el.innerText)).includes('revisar relatórios'));
  await page.click('.eixo-ai-abort');
  const afterCancel=(await api('/api/state')).data.state;
  assert.equal(afterCancel.collections.events.length,1,'cancel must not write a record');

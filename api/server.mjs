@@ -74,7 +74,7 @@ function securityHeaders(req,res){
  res.setHeader('X-Frame-Options','DENY');
  res.setHeader('Referrer-Policy','strict-origin-when-cross-origin');
  res.setHeader('Cross-Origin-Opener-Policy','same-origin');
- res.setHeader('Permissions-Policy','camera=(self), microphone=(), geolocation=(), payment=()');
+ res.setHeader('Permissions-Policy','camera=(self), microphone=(self), geolocation=(), payment=()');
  res.setHeader('Content-Security-Policy',"default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self' blob:");
  if(secure(req)&&process.env.EIXO_PRIVATE_ACCESS==='1')res.setHeader('Strict-Transport-Security','max-age=604800');
 }

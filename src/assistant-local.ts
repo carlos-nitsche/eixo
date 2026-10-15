@@ -64,14 +64,14 @@ export function parseDate(text:string,now:Date):string|undefined{
 export function parseTime(text:string):string|undefined{
  const n=normalize(text);
  const match=n.match(/\b(?:as|pelas|para\s+as|a\s+partir\s+das)?\s*(\d{1,2})\s*(?:h|:)(\d{2})?\b/)||
- n.match(/\b(?:as|pelas)\s+(\d{1,2})(?!\s*(?:dias|reais|horas|minutos|r\$))\b/);
+ n.match(/\b(?:as|pelas|horario\s+(?:para\s+)?|hora\s+(?:para\s+)?)(\s+)?(\d{1,2})\s*(?:horas?)?\b/);
  if(!match)return;
- const h=Number(match[1]),m=match[2]?Number(match[2]):0;
+ const h=Number(match[3]||match[1]),m=match[3]?0:match[2]?Number(match[2]):0;
  return h>=0&&h<=23&&m>=0&&m<=59?String(h).padStart(2,'0')+':'+String(m).padStart(2,'0'):undefined;
 }
 export function parseAmount(text:string):number|undefined{
  const n=normalize(text);
- const match=n.match(/(?:r\$\s*|\b(?:de|por|valor|custou|gastei|recebi|paguei|ganhei|entrou)\s+)([0-9]{1,3}(?:\.[0-9]{3})+(?:,[0-9]{1,2})?|[0-9]+(?:[.,][0-9]{1,2})?)\b/);
+ const match=n.match(/(?:r\$\s*|\b(?:de|por|para|valor|custou|gastei|recebi|paguei|ganhei|entrou|quantia|preco)\s+)([0-9]{1,3}(?:\.[0-9]{3})+(?:,[0-9]{1,2})?|[0-9]+(?:[.,][0-9]{1,2})?)\b/);
  if(!match)return undefined;
  const raw=match[1];const cleanNumber=raw.includes(',')?raw.replace(/\./g,'').replace(',','.'):raw;
  const value=Math.round(Number(cleanNumber)*100)/100;
@@ -119,6 +119,8 @@ export function fillDraft(draft:Draft,input:string,now=new Date()):Draft{
  if(draft.kind==='tasks'&&date)fields.dueDate=date;
  if(draft.kind==='transactions'){if(date)fields.date=date;if(amount!==undefined)fields.amount=amount}
  if(draft.kind==='studies'){if(date)fields.date=date;if(duration!==undefined)fields.duration=duration}
+ const titleCorrection=input.match(/^(?:(?:mude|muda|troque|troca|altere|altera|corrija|corrige)\s+)?(?:(?:o|a)\s+)?(?:nome|t[ií]tulo|descri[cç][aã]o)\s+(?:para\s+|pra\s+|[eé]\s+|ser\s+)?(.+)$/i);
+ if(titleCorrection&&titleCorrection[1]?.trim().length>=2)fields.title=clean(titleCorrection[1]).slice(0,130);
  if(!fields.title&&input.trim()){
   const title=description(input,draft.kind);
   if(title&&title.length>=2&&!/^\d+$/.test(title))fields.title=title;
@@ -148,10 +150,18 @@ export function interpretAssistant(text:string,workspaceId:string,now=new Date()
  const n=normalize(input);
  if(existing){
   if(/^(cancelar|cancela|desistir|esquece|nao|não)$/i.test(input))return {type:'reply',reply:'Tudo bem, descartei a solicitação.'};
+  if(/^(?:novo pedido|come[cç]ar de novo|reiniciar|outra coisa)$/i.test(input))return {type:'reply',reply:'Sem problemas. O rascunho anterior foi descartado. O que deseja fazer agora?'};
   const next=fillDraft(existing,input,now);
   return {type:'draft',draft:next,reply:next.missing.length?'Só falta '+next.missing.map(labelField).join(' e ')+'.':'Confira os dados antes de confirmar.'};
  }
  if(/^(oi|ola|ol[aá]|bom dia|boa tarde|boa noite|ajuda|o que voce faz|comandos|exemplos)[!?\s.]*$/.test(n))return {type:'reply',reply:'Sou o Assistente EIXO, funcionando localmente. Posso agendar compromissos, criar tarefas, registrar despesas e receitas ou sessões de estudo. Também posso resumir seu dia. Sempre confirmo antes de salvar.'};
+ if(records&&/\b(?:quanto|qual|meu|mostre|mostrar|resumo|total)\b/.test(n)&&/\b(?:gastei|gastos|despesas|recebi|receitas|ganhei|saldo|financeiro)\b/.test(n)){
+  const month=iso(now).slice(0,7),money=(x:number)=>x.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+  const active=records.transactions.filter(x=>(x.workspaceId||'pessoal')===workspaceId&&String(x.date||'').startsWith(month+'-'));
+  const sum=(type:string)=>active.filter(x=>x.type===type).reduce((v,x)=>v+(Number.isFinite(Number(x.amount))?Math.max(0,Number(x.amount)):0),0);
+  const income=sum('Receita'),expenses=sum('Despesa');
+  return {type:'reply',reply:'Seu financeiro de '+month.slice(5)+'/'+month.slice(0,4)+':\nEntradas: '+money(income)+'\nDespesas: '+money(expenses)+'\nSaldo: '+money(income-expenses)+'.\nDados do espaço atual.'};
+ }
  if(/\b(?:o que|quais|resum|me mostra|mostr|tenho|minha agenda|penden)\w*.*\b(?:hoje|amanha|tarefas|compromissos|agenda|dia)\b|\b(?:resumo do dia|minhas tarefas)\b/.test(n)){
   if(!records)return {type:'reply',reply:'Abra a Central Meu Dia para ver seu planejamento.'};
   const date=parseDate(input,now)||iso(now);
