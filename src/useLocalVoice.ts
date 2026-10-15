@@ -1,25 +1,38 @@
-// EIXO OS 0.8 — local microphone recording and on-device speech recognition, browser only.
-// No remote STT endpoints, uploads, SpeechRecognition without processLocally or third-party APIs.
+// EIXO OS · React 19 voice hook · Audio never leaves this browser; Whisper runs in same-origin Web Worker.
 import {useCallback,useEffect,useRef,useState} from 'react';
 
-type VoiceMode='idle'|'checking'|'dictating'|'recording'|'preview';
+type VoiceMode='idle'|'checking'|'recording'|'transcribing'|'preview';
 export type LocalAudioNote={url:string;seconds:number;mimeType:string};
-type RecognizerResult={resultIndex:number;results:ArrayLike<ArrayLike<{transcript:string}>>};
-type LocalRecognizer={lang:string;processLocally:boolean;continuous:boolean;interimResults:boolean;onresult:((event:RecognizerResult)=>void)|null;onerror:((event:{error:string})=>void)|null;onend:(()=>void)|null;start:()=>void;stop:()=>void;abort:()=>void};
-type LocalRecognizerConstructor={new():LocalRecognizer;available?:(options:{langs:string[];processLocally:boolean})=>Promise<string>};
-const onDeviceRecognizer=():LocalRecognizerConstructor|undefined=>{
- const view=window as typeof window & {SpeechRecognition?:LocalRecognizerConstructor;webkitSpeechRecognition?:LocalRecognizerConstructor};
- const constructor=view.SpeechRecognition||view.webkitSpeechRecognition;
- return constructor?.available?constructor:undefined; // Legacy implementations may use vendor cloud services.
-};
+type WorkerReply={type:'download'|'status'|'result'|'error';id?:number;text?:string;message?:string;status?:string;percent?:number;file?:string};
+const MAX_SECONDS=75;
+async function decodeAudio(blob:Blob):Promise<Float32Array>{
+ const AudioCtx=window.AudioContext;
+ if(!AudioCtx||!window.OfflineAudioContext)throw Error('Este dispositivo não suporta a conversão de áudio local.');
+ const context=new AudioCtx();
+ try{
+  const decoded=await context.decodeAudioData(await blob.arrayBuffer());
+  const duration=Math.min(MAX_SECONDS,decoded.duration);
+  if(duration<0.25)throw Error('Grave pelo menos um segundo de voz.');
+  const length=Math.max(1,Math.ceil(duration*16000));
+  const offline=new OfflineAudioContext(1,length,16000);
+  const source=offline.createBufferSource();
+  source.buffer=decoded;
+  source.connect(offline.destination);
+  source.start();
+  const rendered=await offline.startRendering();
+  return new Float32Array(rendered.getChannelData(0));
+ }finally{await context.close().catch(()=>{})}
+}
 export function useLocalVoice(onTranscript:(value:string)=>void,workspaceId:string){
  const [mode,setMode]=useState<VoiceMode>('idle');
  const [note,setNote]=useState<LocalAudioNote|null>(null);
  const [notice,setNotice]=useState('');
  const [elapsed,setElapsed]=useState(0);
- const recognizer=useRef<LocalRecognizer|null>(null);
+ const [progress,setProgress]=useState<number|null>(null);
  const recorder=useRef<MediaRecorder|null>(null);
  const stream=useRef<MediaStream|null>(null);
+ const worker=useRef<Worker|null>(null);
+ const audioBuffer=useRef<Blob|null>(null);
  const started=useRef(0);
  const chunks=useRef<Blob[]>([]);
  const urls=useRef<string[]>([]);
@@ -30,26 +43,71 @@ export function useLocalVoice(onTranscript:(value:string)=>void,workspaceId:stri
  const clearClock=()=>{if(durationId.current!==undefined){clearInterval(durationId.current);durationId.current=undefined}};
  const shutDown=useCallback((revoke:boolean)=>{
   generation.current++;
-  try{recognizer.current?.abort()}catch{}
-  recognizer.current=null;
   try{if(recorder.current?.state==='recording')recorder.current.stop()}catch{}
   recorder.current=null;
   stream.current?.getTracks().forEach(track=>track.stop());stream.current=null;
+  worker.current?.terminate();worker.current=null;
   clearClock();
   chunks.current=[];
-  if(revoke){urls.current.forEach(url=>URL.revokeObjectURL(url));urls.current=[];}
+  audioBuffer.current=null;
+  if(revoke){urls.current.forEach(url=>URL.revokeObjectURL(url));urls.current=[]}
  },[]);
- useEffect(()=>()=>shutDown(true),[shutDown,workspaceId]);
- useEffect(()=>{setMode('idle');setNote(null);setElapsed(0);setNotice('')},[workspaceId]);
+ useEffect(()=>{setMode('idle');setNote(null);setElapsed(0);setNotice('');setProgress(null);return()=>shutDown(true)},[shutDown,workspaceId]);
  const reset=()=>{
-  shutDown(false);
-  if(note){URL.revokeObjectURL(note.url);urls.current=urls.current.filter(url=>url!==note.url)}
-  setMode('idle');setNote(null);setElapsed(0);setNotice('');
+  shutDown(true);setMode('idle');setNote(null);setElapsed(0);setProgress(null);setNotice('');
  };
- const beginRecording=async(runId:number)=>{
+ const transcribe=async(blob:Blob,runId:number)=>{
+  if(runId!==generation.current)return;
+  setMode('transcribing');setProgress(null);
+  try{
+   setNotice('Preparando o áudio para reconhecer português...');
+   const status=await fetch('/models/eixo-whisper-status.json',{cache:'no-store'});
+   if(!status.ok)throw Error('Modelo Whisper não instalado. Execute: npm run voice:install');
+   const audio=await decodeAudio(blob);
+   if(runId!==generation.current)return;
+   const engine=worker.current??new Worker(new URL('./whisper-local.worker.ts',import.meta.url),{type:'module',name:'eixo-whisper-offline'});
+   worker.current=engine;
+   engine.onmessage=(event:MessageEvent<WorkerReply>)=>{
+    if(runId!==generation.current)return;
+    const data=event.data;
+    if(data.type==='download'){
+     if(typeof data.percent==='number')setProgress(data.percent);
+     setNotice('Carregando modelo Whisper local'+(typeof data.percent==='number'?' · '+data.percent+'%':'')+'...');
+    }else if(data.type==='status'){setNotice(data.message||'Transcrevendo português localmente...')}
+    else if(data.type==='error'){
+     engine.terminate();worker.current=null;setMode('preview');setProgress(null);
+     setNotice('Transcrição indisponível: '+(data.message||'erro no modelo')+'. O áudio continua disponível para ouvir e tentar novamente.');
+    }else if(data.type==='result'){
+     // Keep the model warm inside this worker for the next voice message.
+     setProgress(null);
+     if(data.text?.trim()){
+      transcript.current(data.text.trim());
+      setNotice('Transcrição local concluída. Revise a frase e pressione Enviar para criar o registro.');
+      setMode('idle');setNote(null);audioBuffer.current=null;
+      urls.current.forEach(url=>URL.revokeObjectURL(url));urls.current=[];
+     }else{
+      setMode('preview');setNotice('Não identifiquei palavras no áudio. Ouça a gravação ou tente falar mais perto do microfone.');
+     }
+    }
+   };
+   engine.onerror=()=>{
+    if(runId!==generation.current)return;
+    engine.terminate();worker.current=null;setProgress(null);setMode('preview');
+    setNotice('Erro ao iniciar a transcrição local. Confira a instalação do modelo e tente novamente.');
+   };
+   engine.postMessage({id:runId,audio,sampleRate:16000},[audio.buffer]);
+  }catch(error){
+   if(runId!==generation.current)return;
+   setProgress(null);setMode('preview');
+   setNotice(error instanceof Error?error.message:'Falha ao decodificar áudio local.');
+  }
+ };
+ const start=async()=>{
+  if(mode!=='idle')return;
+  setMode('checking');setNotice('Solicitando acesso ao microfone...');setProgress(null);
+  const runId=++generation.current;
   if(!navigator.mediaDevices?.getUserMedia||typeof MediaRecorder==='undefined'){
-   if(runId===generation.current){setMode('idle');setNotice('Este navegador não oferece gravação de microfone. Você pode digitar sua mensagem.')}
-   return;
+   setMode('idle');setNotice('Este navegador não oferece gravação de microfone.');return;
   }
   try{
    const media=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true},video:false});
@@ -58,69 +116,45 @@ export function useLocalVoice(onTranscript:(value:string)=>void,workspaceId:stri
    const format=['audio/webm;codecs=opus','audio/mp4','audio/webm'].find(m=>MediaRecorder.isTypeSupported(m));
    const handler=new MediaRecorder(media,format?{mimeType:format,audioBitsPerSecond:64000}:undefined);
    recorder.current=handler;chunks.current=[];started.current=Date.now();setElapsed(0);setMode('recording');
-   setNotice('Gravando neste dispositivo. O áudio não é enviado ao servidor.');
+   setNotice('Gravando voz. Ao terminar, o Whisper transcreverá sem enviar áudio a serviços externos.');
    durationId.current=window.setInterval(()=>{
-    const secs=Math.floor((Date.now()-started.current)/1000);setElapsed(secs);
-    if(secs>=75&&handler.state==='recording')handler.stop();
+    const seconds=Math.floor((Date.now()-started.current)/1000);setElapsed(seconds);
+    if(seconds>=MAX_SECONDS&&handler.state==='recording')handler.stop();
    },250);
-   handler.ondataavailable=ev=>{if(ev.data.size>0)chunks.current.push(ev.data)};
-   handler.onerror=()=>{setNotice('Houve um problema ao gravar. Tente novamente.');setMode('idle')};
+   handler.ondataavailable=event=>{if(event.data.size>0)chunks.current.push(event.data)};
+   handler.onerror=()=>{setNotice('Houve um problema com o microfone.');setMode('idle')};
    handler.onstop=()=>{
     clearClock();media.getTracks().forEach(track=>track.stop());
     if(runId!==generation.current)return;
     const blob=new Blob(chunks.current,{type:handler.mimeType||'audio/webm'});
     stream.current=null;recorder.current=null;
-    if(blob.size<100){setMode('idle');setNotice('A gravação ficou vazia. Tente novamente.');return}
+    if(blob.size<100){setMode('idle');setNotice('O áudio ficou vazio. Tente novamente.');return}
+    audioBuffer.current=blob;
     const url=URL.createObjectURL(blob);urls.current.push(url);
     const seconds=Math.max(1,Math.ceil((Date.now()-started.current)/1000));
-    setNote({url,seconds,mimeType:blob.type});setMode('preview');setElapsed(seconds);
-    setNotice('Gravação concluída. Ouça antes de enviar; ela ficará apenas nesta conversa.');
+    setNote({url,seconds,mimeType:blob.type});setElapsed(seconds);
+    void transcribe(blob,runId);
    };
    handler.start(250);
   }catch(error){
    if(runId!==generation.current)return;
    setMode('idle');
    const denied=error instanceof DOMException&&['NotAllowedError','PermissionDeniedError'].includes(error.name);
-   setNotice(denied?'O acesso ao microfone foi negado. Libere a permissão nas configurações do navegador.':'Não foi possível iniciar o microfone. Verifique se ele está disponível.');
+   setNotice(denied?'Microfone bloqueado: libere o acesso deste site nas permissões do navegador.':'Não foi possível iniciar o microfone.');
   }
- };
- const start=async()=>{
-  if(mode!=='idle')return;
-  setMode('checking');setNotice('Verificando reconhecimento de voz no dispositivo...');
-  const runId=++generation.current;
-  const Engine=onDeviceRecognizer();
-  if(Engine){
-   try{
-    const available=await Engine.available!({langs:['pt-BR'],processLocally:true});
-    if(runId!==generation.current)return;
-    if(available==='available'){
-     const instance=new Engine();instance.lang='pt-BR';instance.processLocally=true;
-     instance.continuous=false;instance.interimResults=false;recognizer.current=instance;
-     instance.onresult=(event)=>{
-      if(runId!==generation.current)return;
-      const text=Array.from(event.results).slice(event.resultIndex).map(result=>result[0]?.transcript||'').join(' ').trim();
-      if(text){transcript.current(text);setNotice('Voz transcrita no próprio dispositivo. Revise o texto e envie quando quiser.')}
-     };
-     instance.onerror=(event)=>{if(runId!==generation.current)return;setMode('idle');setNotice(event.error==='no-speech'?'Nenhuma fala identificada. Tente novamente.':'Não foi possível transcrever. Use o microfone para gravar um áudio local.')};
-     instance.onend=()=>{if(runId===generation.current){recognizer.current=null;setMode('idle')}};
-     instance.start();setMode('dictating');setNotice('Ouvindo em português. Reconhecimento no dispositivo, sem API externa.');return;
-    }
-    setNotice(available==='downloadable'?'O pacote de português ainda não está instalado. Vou gravar o áudio localmente.':'Transcrição local indisponível neste navegador. Vou gravar o áudio.');
-   }catch{
-    setNotice('Não foi possível ativar a transcrição local. Vou usar o gravador de áudio.');
-   }
-  }
-  if(runId===generation.current)await beginRecording(runId);
  };
  const stop=()=>{
-  if(mode==='dictating'){try{recognizer.current?.stop()}catch{};return}
   if(mode==='recording'&&recorder.current?.state==='recording')recorder.current.stop();
+ };
+ const retry=()=>{
+  if(mode!=='preview'||!audioBuffer.current)return;
+  void transcribe(audioBuffer.current,generation.current);
  };
  const consume=():LocalAudioNote|null=>{
   if(mode!=='preview'||!note)return null;
   const snapshot=note;setNote(null);setMode('idle');setElapsed(0);
-  setNotice('Áudio salvo apenas nesta conversa. Para criar registros, envie também a transcrição em texto.');
+  setNotice('Áudio mantido somente nesta conversa, sem upload. Pode digitar o comando para cadastrar.');
   return snapshot;
  };
- return {mode,note,notice,elapsed,start,stop,reset,consume,recording:mode==='recording'||mode==='dictating'};
+ return {mode,note,notice,elapsed,progress,start,stop,reset,retry,consume,recording:mode==='recording',transcribing:mode==='transcribing'};
 }

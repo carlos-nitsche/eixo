@@ -1,12 +1,71 @@
-﻿node_modules/
+node_modules/
 dist/
+server-data/
 .env
 .env.*
 !.env.example
-server-data/
 *.log
-*.db
 *.sqlite
-*.bak
+*.db
+.DS_Store
+tests/test-upload.png
+eixo-saas-mobile.png
+eixo-*.png
+
+.qa-runtime/
+
+# Dados reais, copias de seguranca e credenciais de acesso remoto
+secure-backup-*/
+postgres-consistent-backup-*/
+mobile-date-backup-*/
+audit-backup-*/
+barcode-backup-*/
+custom-muscle-icons-backup-*/
+musclemap-backup-*/
+training-visual-backup-*/
+nutrition-backup-*/
+*private-remote-credentials*
+
 .qa-*/
-__pycache__/
+
+# Backups consistentes do banco e do codigo (nao publicar)
+erp-hardening-backup-*/
+erp-postfix-db-*/
+
+# Backups privados da reforma de Hábitos
+habits-upgrade-backup-*/
+habits-db-backup-*/
+
+# Backup do PDV profissional / banco protegido
+pdv-professional-backup-*/
+pdv-postdeploy-db-backup-*/
+.qa-pdv-professional/
+
+# Asaas apenas sandbox e backups sensíveis
+asaas-sandbox-backup-*/
+asaas-sandbox-db-backup-*/
+.qa-asaas-billing/
+.env.asaas*
+server-data/asaas-credentials*
+
+# Asaas Sandbox credentials - NEVER commit
+server-data/asaas-sandbox.json
+asaas-sandbox-backup-*/
+.qa-asaas-billing/
+
+# Cobrança Asaas: cópias privadas e banco isolado
+asaas-sandbox-backup-*/
+asaas-sandbox-db-backup-*/
+.qa-asaas-billing/
+server-data/asaas-*.json
+server-data/asaas-*.txt
+
+# Asaas test databases and production secret stores
+.qa-asaas-billing/
+.qa-asaas-live-guards/
+asaas-sandbox-backup-*/
+server-data/asaas-production-secrets*
+
+# Offline speech-to-text assets are installed locally; never commit ~75 MB model binaries.
+/public/models/
+/public/whisper-wasm/

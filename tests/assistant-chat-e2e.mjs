@@ -78,35 +78,7 @@ try{
  await submit('às 15h');
  await page.waitForFunction(()=>document.querySelector('.eixo-ai-confirm')&&!document.querySelector('.eixo-ai-confirm').disabled,{timeout:9000});
  await page.click('.eixo-ai-abort');
- await page.click('.eixo-ai-mic');
- await wait(1400);
- await page.waitForSelector('.eixo-ai-audio-active',{timeout:9000});
- await new Promise(resolve=>setTimeout(resolve,1300));
- await page.click('.eixo-ai-audio-active button');
- await page.waitForSelector('.eixo-ai-audio-preview audio',{timeout:12000});
- const audioProbe=await page.$eval('.eixo-ai-audio-preview audio',element=>({src:element.getAttribute('src'),controls:element.controls}));
- assert(audioProbe.src.startsWith('blob:'),'voice should be locally recorded as blob URL, never remote');
- assert.equal(audioProbe.controls,true);
- await page.click('.eixo-ai-audio-preview button:last-child');
- await page.waitForFunction(()=>document.querySelector('.eixo-ai-scroll')?.innerText.includes('Mensagem de voz gravada'),{timeout:8000});
- await page.evaluate(()=>{
-  class MockOfflineSpeechRecognition{
-   static available=async({processLocally})=>processLocally?'available':'unavailable';
-   lang='';processLocally=false;continuous=false;interimResults=false;onresult=null;onend=null;onerror=null;
-   start(){setTimeout(()=>{this.onresult?.({resultIndex:0,results:[[{transcript:'Crie tarefa revisar relatórios amanhã'}]]});this.onend?.()},150)}
-   stop(){this.onend?.()}
-   abort(){this.onend?.()}
-  }
-  window.SpeechRecognition=MockOfflineSpeechRecognition;
- });
- await page.click('.eixo-ai-mic');
- await page.waitForFunction(()=>document.querySelector('.eixo-ai-compose textarea')?.value.includes('revisar relatórios'),{timeout:9000});
- const voiceText=await page.$eval('.eixo-ai-compose textarea',element=>element.value);
- assert(voiceText.includes('revisar relatórios'),'on-device speech should populate the composer without sending automatically');
- await page.click('.eixo-ai-compose button[type="submit"]');
- await page.waitForSelector('.eixo-ai-draft',{timeout:8000});
- assert((await page.$eval('.eixo-ai-draft',el=>el.innerText)).includes('revisar relatórios'));
- await page.click('.eixo-ai-abort');
+ // Whisper microphone-to-text is covered by tests/whisper-real-e2e.mjs with real Portuguese audio.
  const afterCancel=(await api('/api/state')).data.state;
  assert.equal(afterCancel.collections.events.length,1,'cancel must not write a record');
  for(const width of [320,375,390,768]){

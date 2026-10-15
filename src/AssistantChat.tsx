@@ -131,15 +131,15 @@ export default function AssistantChat({workspaceId,workspaceName,tasks,events,tr
     <div ref={bottom}/>
    </div>
    {voice.mode==='recording'&&<div className="eixo-ai-audio-active" role="status"><span className="eixo-ai-red-dot"/><AudioLines size={17}/><strong>Gravando áudio</strong><time>{Math.floor(voice.elapsed/60)}:{String(voice.elapsed%60).padStart(2,'0')}</time><button type="button" onClick={voice.stop} aria-label="Parar gravação"><Square size={14}/> Parar</button></div>}
-   {voice.mode==='dictating'&&<div className="eixo-ai-audio-active local" role="status"><AudioLines size={17}/><span>Reconhecendo voz no dispositivo...</span><button type="button" onClick={voice.stop}><Square size={14}/> Parar</button></div>}
-   {voice.note&&<div className="eixo-ai-audio-preview"><span className="eixo-ai-recording-label"><Headphones size={14}/> Áudio local · {voice.note.seconds}s</span><audio controls preload="metadata" src={voice.note.url} aria-label="Ouvir gravação"/><div><button type="button" onClick={voice.reset}><Trash2 size={13}/> Descartar</button><button type="button" onClick={sendAudio}><Send size={13}/> Enviar áudio</button></div></div>}
+   {voice.transcribing&&<div className="eixo-ai-audio-active local" role="status"><AudioLines size={17}/><span><strong>Whisper local</strong> · Transcrevendo português{voice.progress!==null?' · '+voice.progress+'%':''}...</span><button type="button" onClick={voice.reset}><X size={14}/> Cancelar</button></div>}
+   {voice.note&&voice.mode==='preview'&&<div className="eixo-ai-audio-preview"><span className="eixo-ai-recording-label"><Headphones size={14}/> Áudio local · {voice.note.seconds}s</span><audio controls preload="metadata" src={voice.note.url} aria-label="Ouvir gravação"/><div><button type="button" onClick={voice.reset}><Trash2 size={13}/> Descartar</button><button type="button" onClick={voice.retry}><AudioLines size={13}/> Tentar transcrição</button><button type="button" onClick={sendAudio}><Send size={13}/> Guardar áudio</button></div></div>}
    {voice.notice&&<div className="eixo-ai-voice-notice" role="status">{voice.notice}</div>}
    <form className="eixo-ai-compose" onSubmit={onSubmit}>
     <button type="button" className={'eixo-ai-mic '+(voice.recording?'active':'')} aria-label={voice.recording?'Parar microfone':'Gravar ou ditar por voz'} title="Microfone · transcrição no dispositivo quando disponível" disabled={voice.mode==='checking'||voice.mode==='preview'} onClick={()=>{if(voice.recording)voice.stop();else void voice.start()}}>{voice.recording?<Square size={17}/>:<Mic size={19}/>}</button>
     <textarea ref={textarea} rows={2} maxLength={800} value={input} onChange={e=>setInput(e.target.value)} onKeyDown={onKeyDown} placeholder={pending?'Informe ou corrija os detalhes...':'Peça para agendar, registrar ou organizar...'} aria-label="Mensagem para Assistente EIXO"/>
     <button type="submit" className="eixo-ai-send" title="Enviar mensagem" aria-label="Enviar mensagem" disabled={!input.trim()||busy}><ArrowUp size={19}/></button>
    </form>
-   <footer className="eixo-ai-foot"><span><ShieldCheck size={12}/> Áudio local e dados sob seu controle</span><span>Enter envia · Shift+Enter pula linha</span></footer>
+   <footer className="eixo-ai-foot"><span><ShieldCheck size={12}/> Whisper offline · Áudio fica no dispositivo</span><span>Enter envia · Shift+Enter pula linha</span></footer>
   </section>}
  </>;
 }

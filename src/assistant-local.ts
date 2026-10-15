@@ -65,7 +65,12 @@ export function parseTime(text:string):string|undefined{
  const n=normalize(text);
  const match=n.match(/\b(?:as|pelas|para\s+as|a\s+partir\s+das)?\s*(\d{1,2})\s*(?:h|:)(\d{2})?\b/)||
  n.match(/\b(?:as|pelas|horario\s+(?:para\s+)?|hora\s+(?:para\s+)?)(\s+)?(\d{1,2})\s*(?:horas?)?\b/);
- if(!match)return;
+ if(!match){
+  const words:Record<string,number>={zero:0,uma:1,um:1,duas:2,dois:2,tres:3,quatro:4,cinco:5,seis:6,sete:7,oito:8,nove:9,dez:10,onze:11,doze:12,treze:13,catorze:14,quatorze:14,quinze:15,dezesseis:16,dezessete:17,dezoito:18,dezenove:19,vinte:20,'vinte e um':21,'vinte e dois':22,'vinte e tres':23};
+  const spoken=n.match(/\b(?:as|pelas|para as|horario para)\s+(vinte e (?:um|dois|tres)|quatorze|catorze|dezesseis|dezessete|dezoito|dezenove|quinze|treze|doze|onze|vinte|zero|uma?|duas?|tres|quatro|cinco|seis|sete|oito|nove|dez)\s*(?:horas?)?\b/);
+  if(!spoken)return;
+  return String(words[spoken[1]]).padStart(2,'0')+':00';
+ }
  const h=Number(match[3]||match[1]),m=match[3]?0:match[2]?Number(match[2]):0;
  return h>=0&&h<=23&&m>=0&&m<=59?String(h).padStart(2,'0')+':'+String(m).padStart(2,'0'):undefined;
 }
@@ -83,7 +88,8 @@ const removeDates=(s:string)=>s
  .replace(/\b(?:dia\s+)?\d{1,2}\s+de\s+(?:janeiro|fevereiro|mar[cç]o|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro)(?:\s+de\s+\d{4})?\b/gi,' ')
  .replace(/\bdia\s+\d{1,2}\b/gi,' ')
  .replace(/(?:^|\s)(?:(?:às|as|pelas|para\s+as|a\s+partir\s+das)\s+)?\d{1,2}\s*(?:h|:)\d{0,2}(?=\s|[,!?]|$)/gi,' ')
- .replace(/(?:^|\s)(?:às|as|pelas)\s+\d{1,2}(?=\s|[,!?]|$)/gi,' ');
+ .replace(/(?:^|\s)(?:às|as|pelas)\s+\d{1,2}(?=\s|[,!?]|$)/gi,' ')
+ .replace(/(?:^|\s)(?:às|as|pelas)\s+(?:vinte\s+e\s+(?:um|dois|tr[eê]s)|(?:zero|uma?|duas?|tr[eê]s|quatro|cinco|seis|sete|oito|nove|dez|onze|doze|treze|catorze|quatorze|quinze|dezesseis|dezessete|dezoito|dezenove|vinte))\s*(?:horas?)?(?=\s|[,!?]|$)/gi,' ');
 const moneyRemoved=(s:string)=>s.replace(/(?:r\$\s*|\b(?:de|por|valor|custou|gastei|recebi|paguei|ganhei|entrou)\s+)(?:\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)\b/gi,' ');
 export function inferKind(text:string):AssistantKind|undefined{
  const n=normalize(text);

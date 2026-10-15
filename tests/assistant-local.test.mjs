@@ -92,3 +92,14 @@ test('financial summary uses only the current workspace and requested month',()=
  assert(!result.reply.includes('99.999'));
  assert(!result.reply.includes('3.333'));
 });
+
+test('speaking natural Portuguese hours becomes time fields with clean titles',()=>{
+ assert.equal(parseTime('amanhã às quatorze horas'),'14:00');
+ assert.equal(parseTime('reunião às quinze horas'),'15:00');
+ assert.equal(parseTime('às vinte e três horas'),'23:00');
+ assert.equal(parseTime('às quatro horas'),'04:00'); // Never silently infer 16h.
+ const event=plan('agende consulta amanhã às quatorze horas');
+ assert.equal(event.draft.fields.time,'14:00');
+ assert.equal(event.draft.fields.date,'2026-10-16');
+ assert.equal(event.draft.fields.title,'consulta');
+});

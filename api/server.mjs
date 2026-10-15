@@ -17,7 +17,7 @@ const host=process.env.EIXO_HOST||'127.0.0.1';
 if(process.env.EIXO_MODE==='production'&&(!process.env.DATABASE_URL||!process.env.SMTP_URL||!String(process.env.EIXO_PUBLIC_URL||'').startsWith('https://')))throw Error('Produção requer PostgreSQL externo, SMTP e URL HTTPS.');
 if(!['127.0.0.1','::1'].includes(host)&&process.env.EIXO_MODE!=='production')throw Error('Servidor de desenvolvimento só pode escutar no loopback.');
 const plans=[{id:'monthly',name:'Mensal',amountCents:2990,originalAmountCents:3990,months:1},{id:'semiannual',name:'Semestral',amountCents:14990,originalAmountCents:19990,months:6},{id:'annual',name:'Anual',amountCents:26990,originalAmountCents:34990,months:12}];
-const mime={'.html':'text/html; charset=utf-8','.js':'application/javascript','.css':'text/css','.svg':'image/svg+xml','.png':'image/png','.json':'application/json','.webmanifest':'application/manifest+json'};
+const mime={'.html':'text/html; charset=utf-8','.js':'application/javascript','.mjs':'application/javascript','.wasm':'application/wasm','.css':'text/css','.svg':'image/svg+xml','.png':'image/png','.json':'application/json','.webmanifest':'application/manifest+json'};
 const hash=v=>createHash('sha256').update(v).digest('hex');
 const token=()=>randomBytes(32).toString('base64url');
 const safe=(s)=>String(s??'').trim();
@@ -75,7 +75,7 @@ function securityHeaders(req,res){
  res.setHeader('Referrer-Policy','strict-origin-when-cross-origin');
  res.setHeader('Cross-Origin-Opener-Policy','same-origin');
  res.setHeader('Permissions-Policy','camera=(self), microphone=(self), geolocation=(), payment=()');
- res.setHeader('Content-Security-Policy',"default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self' blob:");
+ res.setHeader('Content-Security-Policy',"default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'wasm-unsafe-eval'; media-src 'self' blob:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self' blob:");
  if(secure(req)&&process.env.EIXO_PRIVATE_ACCESS==='1')res.setHeader('Strict-Transport-Security','max-age=604800');
 }
 function knownHost(req){

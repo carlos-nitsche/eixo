@@ -1,7 +1,7 @@
 {
   "name": "eixo-life-os",
   "private": true,
-  "version": "0.8.0",
+  "version": "0.9.0",
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
@@ -36,10 +36,12 @@
     "test:day:unit": "node --experimental-strip-types --test tests/day-planner.test.mjs",
     "test:day:e2e": "npm run build && node tests/day-command-e2e.mjs",
     "test:assistant:unit": "node --experimental-strip-types --test tests/assistant-local.test.mjs",
-    "test:assistant:e2e": "npm run build && node tests/assistant-chat-e2e.mjs"
+    "test:assistant:e2e": "npm run build && node tests/assistant-chat-e2e.mjs",
+    "voice:install": "node scripts/install-local-whisper.mjs"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.9",
+    "@huggingface/transformers": "3.8.1",
     "@zxing/browser": "^0.2.1",
     "jspdf": "^4.2.1",
     "lucide-react": "^1.55.0",
