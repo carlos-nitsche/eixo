@@ -9,7 +9,8 @@ import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Too
 import { Collection, Entry, Store, STORAGE_KEY, config, demoStore, emptyStore, fmtDate, formatMoney, groups, initialValues, loadStore, today, uid, validImport } from './model';
 import { parseERP } from './erp';
 import {normalizeBudgets} from './financial-planning';
-import {normalizeFocusSessions} from './day-planner';
+import {normalizeFocusSessions,isCalendarDate} from './day-planner';
+import type {Draft} from './assistant-local';
 import { parseTraining } from './training';
 import {parseNutrition} from './nutrition';
 import {parseStudy} from './study';
@@ -20,6 +21,7 @@ import {emptyDemoState} from '../api/demo-state.mjs';
 const BusinessERP=lazy(()=>import('./BusinessERP'));
 const FinancialPlanner=lazy(()=>import('./FinancialPlanner'));
 const DayCommandCenter=lazy(()=>import('./DayCommandCenter'));
+const AssistantChat=lazy(()=>import('./AssistantChat'));
 const TrainingStudio=lazy(()=>import('./TrainingStudio'));
 const NutritionStudio=lazy(()=>import('./NutritionStudio'));
 const StudyStudio=lazy(()=>import('./StudyStudio'));
@@ -155,6 +157,17 @@ export default function App(){
  for(const field of config[kind].fields)if(field.key!=='title'){let v:string|number=form[field.key]||'';if(field.kind==='number')v=v===''?'':Number(v);record[field.key]=v}
  if(kind==='businesses')record.logoId=form.logoId||'';
  setStore(s=>({...s,collections:{...s.collections,[kind]:modal.item?s.collections[kind].map(x=>x.id===modal.item?.id?record:x):[record,...s.collections[kind]]}}));setModal(null);setToast(modal.item?'Registro atualizado.':'Registro adicionado.');};
+ const createFromAssistant=(draft:Draft):boolean=>{
+  if(draft.workspaceId!==activeWorkspace||!['events','tasks','transactions','studies'].includes(draft.kind)||draft.missing.length)return false;
+  const f=draft.fields,title=String(f.title||'').trim();if(!title||title.length>130)return false;
+  if(draft.kind==='events'&&(!isCalendarDate(f.date)||typeof f.time!=='string'||!/^([01]\d|2[0-3]):[0-5]\d$/.test(f.time)))return false;
+  if(draft.kind==='transactions'&&(!Number.isFinite(f.amount)||Number(f.amount)<=0||Number(f.amount)>100000000||!['Receita','Despesa'].includes(String(f.type))))return false;
+  if(draft.kind==='studies'&&(!Number.isInteger(f.duration)||Number(f.duration)<1||Number(f.duration)>1440))return false;
+  if(draft.kind==='tasks'&&f.dueDate&&!isCalendarDate(f.dueDate))return false;
+  const record:Entry={id:uid(),title,workspaceId:activeWorkspace,createdAt:new Date().toISOString(),...f};
+  setStore(previous=>({...previous,collections:{...previous.collections,[draft.kind]:[record,...previous.collections[draft.kind]]}}));
+  return true;
+ };
  const remove=(kind:Collection,item:Entry)=>{if(!window.confirm(`Excluir "${item.title}"? Esta ação não pode ser desfeita.`))return;setStore(s=>({...s,collections:{...s.collections,[kind]:s.collections[kind].filter(x=>x.id!==item.id)}}));setToast('Registro excluído.')};
  const tx=items('transactions'), task=items('tasks'), event=items('events'), studies=items('studies'), workouts=items('workouts');
  const month=currentMonth(), monthly=tx.filter(x=>String(x.date||'').startsWith(month));
@@ -252,10 +265,11 @@ export default function App(){
     <Panel title="Dados e privacidade" subtitle="Dados vinculados à sua conta"><div className="privacy-line"><IconTile variant="softblue"><ShieldCheck size={19}/></IconTile><div><strong>Sincronização da conta</strong><p>Esta versão salva dados em um servidor local por conta de usuário, com sincronização após mudanças. Ainda não é hospedagem de produção com HTTPS ou infraestrutura de backups automáticos. Faça cópias de segurança regularmente.</p></div></div><div className="settings-buttons"><button className="btn light" onClick={exportData}><Download size={16}/> Exportar backup JSON</button><button className="btn light" onClick={()=>importRef.current?.click()}><FileUp size={16}/> Importar backup JSON</button><input ref={importRef} onChange={readImport} accept=".json,application/json" type="file" hidden/></div></Panel>
     <Panel title="Demonstração" subtitle="Explore todos os módulos com exemplos completos"><p className="settings-text">Preencha agenda, finanças, estudos, treinos, alimentação, projetos e hábitos. A empresa de exemplo inclui clientes, produtos, vendas, compras, estoque, contas e relatórios. Todos os módulos serão ativados no espaço Horizonte • Demonstração. Essa operação substitui seus dados atuais; exporte um backup antes de continuar.</p><button className="btn light" disabled={demoBusy} onClick={()=>void changeDemo(true)}><Sparkles size={16}/> {demoBusy?'Preparando demonstração…':'Carregar demonstração'}</button></Panel>
     <Panel title="Limpar armazenamento" subtitle="Apagar os registros deste navegador"><p className="settings-text">Essa operação exclui os dados locais do EIXO e não pode ser desfeita sem um backup.</p><button className="btn destructive" onClick={()=>{if(window.confirm('Excluir TODOS os dados locais do EIXO?')&&window.confirm('Última confirmação: apagar todos os registros?')){setStore(emptyStore());setToast('Todos os registros foram removidos.');setPage('dashboard')}}}><Trash2 size={16}/> Excluir todos os dados</button></Panel></div>
-    <div className="version-info">EIXO OS · Versão 0.6.0 · Meu Dia, foco produtivo e planejamento inteligente.</div>
+    <div className="version-info">EIXO OS · Versão 0.7.0 · Assistente conversacional local e ações integradas.</div>
    </>}
    </main>
   </div>
+  <Suspense fallback={null}><AssistantChat workspaceId={activeWorkspace} workspaceName={workspaceTitle} tasks={task} events={event} transactions={tx} enabled={can('agenda')||can('financeiro')||can('estudos')} onCreate={createFromAssistant}/></Suspense>
   {toast&&<div className="toast" role="status"><Check size={17}/>{toast}<button onClick={()=>setToast('')} aria-label="Fechar"><X size={14}/></button></div>}
   {searchOpen&&<div className="overlay" onMouseDown={e=>{if(e.target===e.currentTarget)setSearchOpen(false)}}><div className="search-dialog" role="dialog" aria-modal="true" aria-label="Busca e ações rápidas">
    <div className="search-field"><Search size={21}/><input autoFocus value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar ou acessar um módulo..." aria-label="Buscar registros e ações" onKeyDown={e=>{if(e.key==='Enter'&&paletteActions.length){e.preventDefault();runPaletteAction(paletteActions[0][1],paletteActions[0][2])}}}/><button className="search-close" type="button" onClick={()=>{setSearchOpen(false);setSearch('')}} aria-label="Fechar busca"><X size={17}/></button><kbd>ESC</kbd></div>
