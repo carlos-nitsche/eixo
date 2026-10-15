@@ -1,7 +1,7 @@
 {
   "name": "eixo-life-os",
   "private": true,
-  "version": "0.4.0",
+  "version": "0.5.0",
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
@@ -30,7 +30,9 @@
     "test:training": "npm run test:training:unit && npm run build && node tests/training-calendar-e2e.mjs && node tests/training-visual-e2e.mjs && node tests/muscle-map-e2e.mjs",
     "test:nutrition": "node --experimental-strip-types --test tests/nutrition.test.mjs && npm run build && node tests/nutrition-e2e.mjs",
     "test:study:unit": "node --experimental-strip-types --test tests/study.test.mjs tests/study-domain.test.mjs tests/brain.test.mjs",
-    "test:study:notebook": "npm run test:study:unit && npm run build && node tests/study-notebook-e2e.mjs"
+    "test:study:notebook": "npm run test:study:unit && npm run build && node tests/study-notebook-e2e.mjs",
+    "test:finance:unit": "node --experimental-strip-types --test tests/financial-planning.test.mjs tests/action-center.test.mjs",
+    "test:finance:e2e": "npm run build && node tests/financial-planner-e2e.mjs"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.9",

@@ -28,3 +28,20 @@ test('relative weeks do not incorrectly bridge month or year boundaries',()=>{
  const result=getActionCenter({today:'2026-12-29',workspaceId:'pessoal',tasks:[],events:[{date:'2027-01-05',workspaceId:'pessoal'}],erp:empty});
  assert.equal(result[0].count,1);
 });
+
+test('action center surfaces budget threshold and never leaks another workspace',()=>{
+ const budgets=[
+  {id:'b1',workspaceId:'pessoal',month:'2026-10',category:'Moradia',limit:100},
+  {id:'b2',workspaceId:'pessoal',month:'2026-10',category:'Lazer',limit:100},
+  {id:'b3',workspaceId:'empresa',month:'2026-10',category:'Moradia',limit:50}
+ ];
+ const transactions=[
+  {id:'t1',workspaceId:'pessoal',date:'2026-10-12',type:'Despesa',amount:120,category:'Moradia'},
+  {id:'t2',workspaceId:'pessoal',date:'2026-10-13',type:'Despesa',amount:90,category:'Lazer'},
+  {id:'t3',workspaceId:'empresa',date:'2026-10-12',type:'Despesa',amount:500,category:'Moradia'}
+ ];
+ const notices=getActionCenter({today:'2026-10-15',workspaceId:'pessoal',tasks:[],events:[],erp:empty,transactions,budgets});
+ assert.deepEqual(notices.map(x=>[x.id,x.count]),[['budget-over',1],['budget-near',1]]);
+ const other=getActionCenter({today:'2026-10-15',workspaceId:'empresa',tasks:[],events:[],erp:empty,transactions,budgets});
+ assert.deepEqual(other.map(x=>[x.id,x.count]),[['budget-over',1]]);
+});

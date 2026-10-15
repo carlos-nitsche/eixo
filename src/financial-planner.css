@@ -1,0 +1,46 @@
+/* EIXO OS v0.5.0 — financial planning */
+.financial-planner{overflow:hidden;margin-bottom:22px}
+.financial-planner-head{align-items:center;flex-wrap:wrap}
+.financial-planner-eyebrow{display:inline-flex;align-items:center;gap:7px;font-size:10px;letter-spacing:1px;font-weight:800;color:var(--text-muted);margin-bottom:6px}
+.financial-planner-actions{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.finance-month{display:flex;align-items:center;gap:6px;padding:0 9px;border:1px solid var(--border);border-radius:8px;background:var(--surface);min-height:38px}
+.finance-month input{background:transparent;color:var(--text);border:0;min-width:0;width:145px;padding:7px 1px}
+.finance-month input:focus{outline:none}
+.financial-planner-summary{padding:8px 22px 18px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px}
+.financial-planner-summary article{border-radius:11px;border:1px solid var(--border);background:var(--surface-muted);padding:15px 14px;min-width:0}
+.financial-planner-summary article>span{font-size:11px;color:var(--text-muted);display:block;margin-bottom:8px}
+.financial-planner-summary article>strong{font-size:19px;font-weight:800;letter-spacing:-.5px;word-break:break-word}
+.financial-planner-summary .finance-negative{color:var(--danger)}
+.financial-planner-summary .finance-positive{color:var(--success)}
+.financial-planner-content{padding:0 22px 23px;display:grid;grid-template-columns:minmax(0,1.5fr) minmax(260px,1fr);gap:16px}
+.financial-planner-left{border:1px solid var(--border);border-radius:12px;min-width:0}
+.financial-budget-list{padding:14px 16px}
+.finance-overview{display:grid;grid-template-columns:1fr auto;gap:8px;margin:0 0 12px;font-size:11px;color:var(--text-secondary)}
+.finance-overview>.finance-track{grid-column:1/-1}
+.finance-track{background:var(--surface-muted);height:7px;border-radius:8px;overflow:hidden}
+.finance-track>span{display:block;height:100%;background:var(--accent);border-radius:8px;transition:width .2s ease}
+.finance-track>span[data-exceeded="true"]{background:var(--danger)}
+.finance-budget-item{padding:14px 0;border-top:1px solid var(--line)}
+.finance-budget-title{display:flex;justify-content:space-between;gap:12px;align-items:start;margin-bottom:9px}
+.finance-budget-title strong,.finance-budget-title small{display:block}
+.finance-budget-title strong{font-size:12px}
+.finance-budget-title small{font-size:10px;color:var(--text-muted);margin-top:5px;line-height:1.5}
+.finance-budget-item[data-exceeded="true"] .finance-budget-title small{color:var(--danger)}
+.finance-unbudgeted{font-size:11px;display:flex;gap:9px;align-items:start;padding:12px 0 0;border-top:1px solid var(--line);color:var(--text-secondary)}
+.finance-empty{padding:21px;display:flex;align-items:start;flex-direction:column;gap:10px;min-height:212px}
+.finance-empty strong{font-size:14px}
+.finance-empty p{color:var(--text-muted);font-size:12px;line-height:1.6;margin:0}
+.finance-empty-mark{width:45px;height:45px;display:grid;place-items:center;background:var(--surface-muted);border-radius:12px}
+.financial-budget-form{border-radius:12px;border:1px solid var(--border);padding:19px;background:var(--surface-muted);display:flex;flex-direction:column;gap:12px}
+.financial-budget-form>strong{font-size:13px}
+.financial-budget-form>p:not(.finance-message){font-size:11px;color:var(--text-secondary);margin:-4px 0 1px}
+.financial-budget-form label{display:flex;flex-direction:column;gap:5px;position:relative;font-size:11px;font-weight:700;color:var(--text-secondary)}
+.financial-budget-form label input,.financial-budget-form label select{border:1px solid var(--border);background:var(--surface);border-radius:8px;width:100%;padding:11px;color:var(--text);min-height:39px}
+.financial-budget-form label select{appearance:none;padding-right:30px}
+.financial-budget-form label svg{position:absolute;right:10px;bottom:12px;pointer-events:none}
+.financial-budget-form>button{width:100%}
+.financial-budget-form>small{font-size:10px;line-height:1.6;color:var(--text-muted)}
+.finance-message{display:flex;gap:8px;align-items:center;font-size:11px;color:var(--text-secondary);margin:0}
+@media(max-width:1080px){.financial-planner-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.financial-planner-content{grid-template-columns:1fr}}
+@media(max-width:620px){.financial-planner-head{padding:18px 14px 12px}.financial-planner-actions{width:100%}.financial-planner-actions .btn{flex:1;white-space:normal}.financial-planner-summary{padding:6px 14px 14px;gap:8px}.financial-planner-summary article{padding:12px 10px}.financial-planner-summary article>strong{font-size:15px}.financial-planner-content{padding:0 14px 14px}.financial-budget-form{padding:15px}.finance-month{flex:1}}
+@media(prefers-reduced-motion:reduce){.finance-track>span{transition:none}}
