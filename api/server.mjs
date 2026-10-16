@@ -65,8 +65,14 @@ function originOkay(req){
  if(!origin)return true;
  try{
   const u=new URL(origin);
-  const allowed=String(req.socket.encrypted?req.headers.host:(process.env.EIXO_PUBLIC_HOST||req.headers.host)||'').toLowerCase();
-  return u.host.toLowerCase()===allowed&&(secure(req)?u.protocol==='https:'||(u.hostname==='127.0.0.1'&&process.env.EIXO_PRIVATE_ACCESS!=='1'):['http:','https:'].includes(u.protocol));
+  const requestHost=String(req.headers.host||'').toLowerCase();
+  // Trust the local HTTP origin only over an actual loopback connection,
+  // with the exact same Host. Public access still requires the configured HTTPS host.
+  const fromLoopback=['127.0.0.1','::1','::ffff:127.0.0.1'].includes(req.socket.remoteAddress||'');
+  const localHost=/^(?:127\.0\.0\.1|localhost)(?::\d{1,5})?$/.test(requestHost);
+  if(fromLoopback&&localHost)return u.host.toLowerCase()===requestHost&&u.protocol==='http:';
+  const allowed=String(req.socket.encrypted?requestHost:(process.env.EIXO_PUBLIC_HOST||requestHost)).toLowerCase();
+  return u.host.toLowerCase()===allowed&&(secure(req)?u.protocol==='https:':['http:','https:'].includes(u.protocol));
  }catch{return false}
 }
 function securityHeaders(req,res){
