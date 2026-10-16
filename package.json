@@ -1,7 +1,7 @@
 {
   "name": "eixo-life-os",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
@@ -35,8 +35,10 @@
     "test:finance:e2e": "npm run build && node tests/financial-planner-e2e.mjs",
     "test:day:unit": "node --experimental-strip-types --test tests/day-planner.test.mjs",
     "test:day:e2e": "npm run build && node tests/day-command-e2e.mjs",
-    "test:assistant:unit": "node --experimental-strip-types --test tests/assistant-local.test.mjs",
-    "test:assistant:e2e": "npm run build && node tests/assistant-chat-e2e.mjs"
+    "test:assistant:unit": "node --experimental-strip-types --test tests/assistant-local.test.mjs tests/assistant-conversation.test.mjs",
+    "test:assistant:e2e": "npm run build && node tests/assistant-chat-e2e.mjs",
+    "test:notifications:unit": "node --experimental-strip-types --test tests/notifications.test.mjs",
+    "test:notifications:e2e": "npm run build && node tests/notifications-e2e.mjs"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.9",
